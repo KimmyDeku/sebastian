@@ -1,0 +1,15 @@
+export const EMERGENCY: Record<string, { name: string; police: string; ambulance: string; fire: string; general: string }> = {
+  ZW: { name: "Zimbabwe", police: "995", ambulance: "994", fire: "993", general: "999" },
+  ZA: { name: "South Africa", police: "10111", ambulance: "10177", fire: "10177", general: "112" },
+  ZM: { name: "Zambia", police: "991", ambulance: "992", fire: "993", general: "112" },
+  BW: { name: "Botswana", police: "999", ambulance: "997", fire: "998", general: "911" },
+  KE: { name: "Kenya", police: "999", ambulance: "999", fire: "999", general: "112" },
+  NG: { name: "Nigeria", police: "112", ambulance: "112", fire: "112", general: "112" },
+  GB: { name: "United Kingdom", police: "999", ambulance: "999", fire: "999", general: "112" },
+  US: { name: "United States", police: "911", ambulance: "911", fire: "911", general: "911" },
+  CA: { name: "Canada", police: "911", ambulance: "911", fire: "911", general: "911" },
+  AU: { name: "Australia", police: "000", ambulance: "000", fire: "000", general: "112" },
+  IN: { name: "India", police: "100", ambulance: "102", fire: "101", general: "112" },
+  EU: { name: "European Union", police: "112", ambulance: "112", fire: "112", general: "112" },
+  AE: { name: "United Arab Emirates", police: "999", ambulance: "998", fire: "997", general: "112" },
+};
