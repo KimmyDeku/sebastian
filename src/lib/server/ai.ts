@@ -1,3 +1,6 @@
+import { headers } from "next/headers";
+import { LANG_NAMES } from "@/lib/i18n";
+
 export const SEBASTIAN_CORE = `You are Sebastian, a refined digital butler and personal AI assistant. You are calm, articulate, discreet, proactive, warm, educated and professional. Use gentle butler courtesy but stay concise and useful — never theatrical or servile. You are a digital assistant first: do not role-play any fictional character.
 Trust rules (non-negotiable): never pretend an action succeeded; never invent bookings, calendar events, search results or contacts; state uncertainty plainly; distinguish retrieved facts from your suggestions; flag that prices, weather and news are time-sensitive. Remind the user to verify important information where relevant.`;
 
@@ -10,6 +13,16 @@ export function aiConfigured() {
 type Msg = { role: "user" | "assistant"; content: any };
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+// The app sends the user's chosen language with each request; replies are written in it.
+async function languageRule() {
+  try {
+    const h: any = await headers();
+    const code = h.get("x-sebastian-lang") || "en";
+    if (code === "en" || !LANG_NAMES[code]) return "";
+    return `\nLanguage: write every piece of user-facing text in ${LANG_NAMES[code]}. Keep JSON keys, dates, times, numbers, codes and fixed option values exactly as specified in English.`;
+  } catch { return ""; }
+}
 
 // Converts Sebastian's internal message format (which can include image or PDF attachments)
 // into the format Groq expects.
@@ -31,15 +44,16 @@ function toGroq(m: Msg, vision: boolean) {
   return { role: m.role, content: parts };
 }
 
-// The name "claude" is kept so the rest of the app needs no changes. It now calls Groq.
-export async function claude(opts: { system: string; messages: Msg[]; maxTokens?: number; temperature?: number }): Promise<string> {
+// The name "claude" is kept so the rest of the app needs no changes. It calls Groq.
+export async function claude(opts: { system: string; messages: Msg[]; maxTokens?: number; temperature?: number; model?: string }): Promise<string> {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new AIUnavailable("GROQ_API_KEY is not set on the server.");
 
   const hasImage = opts.messages.some((m) => Array.isArray(m.content) && m.content.some((b: any) => b.type === "image"));
   const visionModel = process.env.GROQ_VISION_MODEL;
   const useVision = hasImage && !!visionModel;
-  const model = useVision ? visionModel! : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const model = useVision ? visionModel! : opts.model || process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const system = opts.system + (await languageRule());
 
   const res = await fetch(GROQ_URL, {
     method: "POST",
@@ -48,7 +62,7 @@ export async function claude(opts: { system: string; messages: Msg[]; maxTokens?
       model,
       max_tokens: opts.maxTokens ?? 1500,
       temperature: opts.temperature ?? 0.6,
-      messages: [{ role: "system", content: opts.system }, ...opts.messages.map((m) => toGroq(m, useVision))],
+      messages: [{ role: "system", content: system }, ...opts.messages.map((m) => toGroq(m, useVision))],
     }),
     cache: "no-store",
   });

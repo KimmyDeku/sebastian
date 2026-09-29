@@ -1,30 +1,14 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { ToastHost } from "@/components/ui/Toast";
-import Script from "next/script";
+import { LiveTranslator } from "@/components/LiveTranslator";
+import { THEME_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Sebastian — your intelligent concierge",
   description: "Finding, planning and discovering, with a butler's composure.",
   icons: { icon: "/favicon.svg" },
 };
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SCQCE67YJB" strategy="afterInteractive" />
-        <Script id="ga4" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SCQCE67YJB');`}
-        </Script>
-      </body>
-    </html>
-  );
-}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -35,8 +19,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -48,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <ToastHost />
+        <LiveTranslator />
       </body>
     </html>
   );

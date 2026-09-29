@@ -21,6 +21,9 @@ export interface Prefs {
   personalization: boolean;
   notifications: boolean;
   emergencyCountry: string;
+  alarmSound?: boolean;   // play a chime when a reminder is due (default on)
+  voiceAlerts?: boolean;  // Sebastian says "Pardon me…" when a reminder is due (default on)
+  plan?: "silver" | "gold" | "diamond"; // default silver
 }
 
 export interface ChatAction { label: string; href: string }
@@ -55,6 +58,7 @@ export interface ScheduleEvent {
   source: { type: "manual" | "booking" | "trip"; ref?: string; provider?: string };
   gcalOpened?: boolean;
   notified?: boolean;
+  seen?: boolean; // dismissed from the pending-reminders note
   createdAt: string;
 }
 
@@ -95,7 +99,14 @@ export interface Trip {
   travellers: number;
   activities: string[];
   itinerary: Itinerary | null;
+  photo?: string;
+  country?: string;
+  origin?: string;
+  pace?: string;
+  notes?: string;
+  mustSee?: string[];
   createdAt: string;
+  updatedAt?: string;
 }
 export interface ItineraryDay { day: number; date?: string; title: string; morning: string; afternoon: string; evening: string; estCost?: number }
 export interface Itinerary {
@@ -104,10 +115,14 @@ export interface Itinerary {
   attractions: { name: string; why: string }[];
   budgetBreakdown: { item: string; amount: number }[];
   tips: string[];
+  etiquette?: string[];
+  etiquetteSource?: { title: string; url: string } | null;
 }
 
 export interface TripDNA { destinations: Record<string, number>; activities: Record<string, number>; budgets: number[] }
 export interface NewsPrefs { sources: string[]; categories: string[] }
+
+import type { BillingState, Receipt } from "./billing";
 
 export interface UserData {
   prefs: Prefs;
@@ -120,4 +135,6 @@ export interface UserData {
   trips: Trip[];
   tripDNA: TripDNA;
   news: NewsPrefs;
+  billing?: BillingState;
+  receipts?: Receipt[];
 }

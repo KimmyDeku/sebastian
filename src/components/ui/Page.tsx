@@ -30,7 +30,7 @@ export function BackButton({ onClick, label = "Back" }: { onClick?: () => void; 
 
 export function PageHeader({ crumbs, title, subtitle, right, onBack }: { crumbs: { label: string; href?: string; onClick?: () => void }[]; title: string; subtitle?: string; right?: ReactNode; onBack?: () => void }) {
   return (
-    <header className="mb-8 md:mb-10">
+    <header className="mb-6 md:mb-7">
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3 min-w-0">
           <BackButton onClick={onBack} />
@@ -40,7 +40,7 @@ export function PageHeader({ crumbs, title, subtitle, right, onBack }: { crumbs:
         {right}
       </div>
       <h1 className="t-h1">{title}</h1>
-      {subtitle && <p className="text-muted mt-2 max-w-2xl text-[15px]">{subtitle}</p>}
+      {subtitle && <p className="text-muted mt-1.5 max-w-2xl text-sm">{subtitle}</p>}
     </header>
   );
 }

@@ -8,6 +8,7 @@ import { useData, useStore, actions } from "@/lib/store";
 import { cx, relTime } from "@/lib/util";
 import { useState } from "react";
 import { ConfirmDialog } from "../ui/Modal";
+import { useUI } from "@/lib/ui";
 
 export function useUpcomingCount() {
   const d = useData();
@@ -82,6 +83,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function Sidebar() {
+  const open = useUI((s) => s.sidebar);
+  if (!open) return null;
   return (
     <aside className="hidden lg:block w-[300px] xl:w-[320px] shrink-0 p-4 xl:p-5">
       <div className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar rounded-[28px] border border-line bg-paper px-5 py-6 shadow-soft">

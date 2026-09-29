@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { speechLang } from "./i18n";
 
 export type VoiceState = "idle" | "listening" | "processing" | "denied" | "unsupported" | "no-speech" | "error";
 
@@ -20,7 +21,7 @@ export function useSpeechRecognition(onFinal: (text: string) => void, opts: { co
     if (!SR) { setState("unsupported"); return; }
     if (typeof navigator !== "undefined" && !navigator.onLine) { setState("error"); return; }
     const r = new SR();
-    r.lang = "en-US";
+    r.lang = speechLang();
     r.interimResults = true;
     r.continuous = !!opts.continuous;
     r.onstart = () => setState("listening");
@@ -59,18 +60,23 @@ export function useSpeaker() {
   const audio = useRef<HTMLAudioElement | null>(null);
   const job = useRef(0);
 
-  // The browser's built-in voice, used as a fallback.
+  // The browser's built-in voice, used as a fallback. It picks a voice for the chosen language.
   const browserSpeak = useCallback((text: string, voiceName?: string, onEnd?: () => void) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
     window.speechSynthesis.cancel();
+    const lang = speechLang();
     const u = new SpeechSynthesisUtterance(text.replace(/[*_#>`]/g, ""));
+    u.lang = lang;
     const voices = window.speechSynthesis.getVoices();
-    const v = voices.find((x) => x.name === voiceName) || voices.find((x) => /en-GB/i.test(x.lang) && /male|daniel|arthur|george|ryan/i.test(x.name)) || voices.find((x) => /en-GB/i.test(x.lang));
+    const english = lang.startsWith("en");
+    const v = (english && voices.find((x) => x.name === voiceName))
+      || (english && voices.find((x) => /en-GB/i.test(x.lang) && /male|daniel|arthur|george|ryan/i.test(x.name)))
+      || voices.find((x) => x.lang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
     if (v) u.voice = v;
     u.rate = 0.98; u.pitch = 0.95;
     u.onstart = () => setSpeaking(true);
     u.onend = () => { setSpeaking(false); onEnd?.(); };
-    u.onerror = () => setSpeaking(false);
+    u.onerror = () => { setSpeaking(false); onEnd?.(); };
     window.speechSynthesis.speak(u);
     return true;
   }, []);
@@ -92,7 +98,7 @@ export function useSpeaker() {
     fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) })
       .then(async (r) => {
         if (my !== job.current) return;
-        if (r.status === 503) { serverVoice = false; setSpeaking(false); browserSpeak(text, voiceName, onEnd); return; }
+        if (r.status === 503 || r.status === 404) { serverVoice = false; setSpeaking(false); browserSpeak(text, voiceName, onEnd); return; }
         if (!r.ok) throw new Error("tts failed");
         serverVoice = true;
         const url = URL.createObjectURL(await r.blob());
@@ -100,7 +106,7 @@ export function useSpeaker() {
         const a = new Audio(url);
         audio.current = a;
         a.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); onEnd?.(); };
-        a.onerror = () => setSpeaking(false);
+        a.onerror = () => { setSpeaking(false); onEnd?.(); };
         await a.play();
       })
       .catch(() => { if (my === job.current) { setSpeaking(false); browserSpeak(text, voiceName, onEnd); } });
