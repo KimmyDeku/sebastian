@@ -39,9 +39,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             {n.badge === "schedule" && count > 0 && <span className="min-w-6 h-6 px-2 rounded-full bg-gold text-white text-[11px] font-medium inline-flex items-center justify-center" aria-label={`${count} scheduled`}>{count}</span>}
           </Link>
         ))}
-        <button onClick={() => setConfirmOut(true)} className="w-full flex items-center gap-4 h-12 px-4 rounded-2xl text-[15px] text-ink hover:bg-cream/50">
-          <LogOut className="w-5 h-5" strokeWidth={1.6} aria-hidden /> Log out
-        </button>
       </nav>
 
       <div className="mt-6 pt-5 border-t border-line">

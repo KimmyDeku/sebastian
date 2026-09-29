@@ -1,4 +1,5 @@
 import { SEBASTIAN_CORE, claude, errorResponse, extractJSON } from "@/lib/server/ai";
+import { openaiCode, openaiReady } from "@/lib/server/openai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -52,6 +53,13 @@ export async function POST(req: Request) {
     }
 
     if (isCoding(messages || [])) {
+      // With an OpenAI key, coding questions go to OpenAI and their usage is recorded in Settings.
+      if (openaiReady() && !att) {
+        try {
+          const r = await openaiCode(CODER, trimmed, "Chat");
+          return Response.json({ ok: true, reply: r.reply.trim(), route: null, params: {}, mode: "code", codingUsage: r.codingUsage });
+        } catch { /* fall back to Groq below */ }
+      }
       const out = await claude({ system: CODER, messages: trimmed, maxTokens: 4000, temperature: 0.2, model: process.env.GROQ_CODE_MODEL || undefined });
       return Response.json({ ok: true, reply: out.trim(), route: null, params: {}, mode: "code" });
     }

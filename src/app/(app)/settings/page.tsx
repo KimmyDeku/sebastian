@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "@/components/billing/Checkout";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
+import { useNotebook, patchNotebook } from "@/lib/notebook";
+import { Gauge } from "lucide-react";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { Field, inputCls, Option } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
@@ -77,6 +79,7 @@ const PLANS = [
 export default function Settings() {
   const acc = useAccount();
   const d = useData();
+  const nb = useNotebook();
   const router = useRouter();
   const { speak } = useSpeaker();
   const [open, setOpen] = useState<Record<string, boolean>>({ personal: true });
@@ -110,6 +113,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
+    if (window.location.hash === "#coding") { setOpen({ coding: true }); setTimeout(() => document.getElementById("coding-btn")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }
     // Back from a card or PayPal payment page: confirm the payment.
     const q = new URLSearchParams(window.location.search);
     const pend = pendingPayment();
@@ -277,6 +281,39 @@ export default function Settings() {
               ))}
             </ul>
           )}
+        </Section>
+
+        <Section id="coding" icon={Gauge} title="Coding usage" summary={(() => { const m = new Date().toISOString().slice(0, 7); const u = nb.codingUsage.filter((x) => x.at.startsWith(m)); return `${u.length} request${u.length === 1 ? "" : "s"} · ${u.reduce((a, x) => a + x.input + x.output, 0).toLocaleString()} tokens this month`; })()} open={!!open.coding} onToggle={() => toggle("coding")}>
+          {(() => {
+            const m = new Date().toISOString().slice(0, 7);
+            const month = nb.codingUsage.filter((x) => x.at.startsWith(m));
+            const input = month.reduce((a, x) => a + x.input, 0), output = month.reduce((a, x) => a + x.output, 0);
+            const costKnown = month.some((x) => x.cost != null);
+            const cost = month.reduce((a, x) => a + (x.cost || 0), 0);
+            const days = Array.from({ length: 14 }, (_, i) => { const dt = new Date(); dt.setDate(dt.getDate() - 13 + i); const k = dt.toISOString().slice(0, 10); return { k, t: nb.codingUsage.filter((x) => x.at.startsWith(k)).reduce((a, x) => a + x.input + x.output, 0) }; });
+            const peak = Math.max(1, ...days.map((x) => x.t));
+            const models = [...new Set(month.map((x) => x.model))];
+            const where = month.reduce((acc: Record<string, number>, x) => ({ ...acc, [x.where]: (acc[x.where] || 0) + 1 }), {});
+            return (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-muted">Coding requests (in Notebook and in chat) run on OpenAI. This tracks what they use this month.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[["Requests", month.length.toLocaleString()], ["Input tokens", input.toLocaleString()], ["Output tokens", output.toLocaleString()], ["Estimated cost", costKnown ? `$${cost.toFixed(cost < 1 ? 4 : 2)}` : "Not set"]].map(([k, v]) => (
+                    <div key={k} className="rounded-2xl bg-canvas border border-line p-3"><p className="text-[11.5px] text-muted">{k}</p><p className="font-serif text-xl mt-0.5">{v}</p></div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[12.5px] text-muted mb-2">Tokens per day, last 14 days</p>
+                  <div className="flex items-end gap-1 h-20" role="img" aria-label="Daily coding token usage">
+                    {days.map((x) => <div key={x.k} title={`${x.k}: ${x.t.toLocaleString()} tokens`} className="flex-1 rounded-t bg-gold/80" style={{ height: `${Math.max(3, (x.t / peak) * 100)}%`, opacity: x.t ? 1 : 0.25 }} />)}
+                  </div>
+                </div>
+                {month.length > 0 && <p className="text-[12.5px] text-muted">Model{models.length > 1 ? "s" : ""}: {models.join(", ")} · {Object.entries(where).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
+                {!costKnown && <p className="text-[12px] text-muted">To see costs, add your model&apos;s prices per million tokens to the server settings (OPENAI_INPUT_PRICE_PER_1M and OPENAI_OUTPUT_PRICE_PER_1M). Your official bill is on platform.openai.com under Usage.</p>}
+                {nb.codingUsage.length > 0 && <Button size="sm" variant="ghost" onClick={() => { patchNotebook((n) => ({ ...n, codingUsage: [] })); toast.info("Usage history cleared."); }}>Clear usage history</Button>}
+              </div>
+            );
+          })()}
         </Section>
 
         <Section id="prefs" icon={SlidersHorizontal} title="Preferences" summary="Appearance, form of address, voice and reminders" open={!!open.prefs} onToggle={() => toggle("prefs")}>
