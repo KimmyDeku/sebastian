@@ -15,6 +15,18 @@ import { IMG } from "@/lib/images";
 const SOURCES = [["bbc", "BBC"], ["cnn", "CNN"], ["abc", "ABC News"], ["aljazeera", "Al Jazeera"], ["sky", "Sky News"], ["fox", "Fox News"], ["zbc", "ZBC News"]];
 const CATS = [["top", "Top stories"], ["world", "World"], ["science", "Science"], ["technology", "Technology"], ["politics", "Politics"], ["economy", "Economy"], ["business", "Business"], ["social", "Social"], ["weather", "Weather"]];
 
+// Channels and topics offered in the "Other" menus.
+const OTHER_SOURCES: { region: string; items: [string, string][] }[] = [
+  { region: "Africa", items: [["herald", "The Herald (Zimbabwe)"], ["newsday", "NewsDay (Zimbabwe)"], ["news24", "News24 (South Africa)"]] },
+  { region: "Europe", items: [["guardian", "The Guardian"], ["dw", "DW (Germany)"], ["france24", "France 24"], ["euronews", "Euronews"], ["rte", "RTÉ (Ireland)"]] },
+  { region: "Americas", items: [["npr", "NPR"], ["cbc", "CBC (Canada)"]] },
+  { region: "Asia and Pacific", items: [["toi", "Times of India"], ["scmp", "South China Morning Post"], ["japantimes", "The Japan Times"], ["cna", "CNA (Singapore)"], ["abcau", "ABC Australia"]] },
+];
+const OTHER_NAMES: Record<string, string> = Object.fromEntries(OTHER_SOURCES.flatMap((g) => g.items));
+const OTHER_CATS: [string, string][] = [["music", "Music"], ["sport", "Sport"], ["money", "Money"], ["entertainment", "Entertainment"], ["film", "Film"], ["health", "Health"], ["travel", "Travel"], ["culture", "Culture and arts"], ["fashion", "Fashion"], ["food", "Food"], ["books", "Books"], ["lifestyle", "Lifestyle"], ["environment", "Environment"], ["education", "Education"]];
+const OTHER_CAT_NAMES: Record<string, string> = Object.fromEntries(OTHER_CATS);
+const selectCls = "h-9 pl-3 pr-8 rounded-pill border border-dashed border-cream-line bg-paper text-[13px] text-ink hover:border-gold cursor-pointer";
+
 function Badge({ s }: { s: string }) {
   if (s === "latest") return null;
   return <span className={cx("text-[10px] uppercase tracking-[.12em] font-medium rounded-full px-2 py-0.5", s === "breaking" ? "bg-danger text-white" : "bg-gold-soft text-gold-deep")}>{s}</span>;
@@ -52,8 +64,24 @@ function NewsInner() {
       <PageHeader crumbs={[{ label: "Home", href: "/" }, { label: "News" }]} title="Stay informed, without the noise" subtitle="Choose your sources and topics. I'll keep the breaking and developing stories at the top."
         right={<Button size="sm" variant="outline" onClick={load} loading={state === "loading"}><RefreshCw className="w-4 h-4" />Refresh</Button>} />
       <div className="space-y-4 mb-10">
-        <div><p className="text-[13px] text-muted mb-2">Sources</p><div className="flex flex-wrap gap-2">{SOURCES.map(([k, l]) => <Option key={k} variant="chip" role="checkbox" selected={sources.includes(k)} onClick={() => toggle(sources, setSources, k)}>{l}</Option>)}</div></div>
-        <div><p className="text-[13px] text-muted mb-2">Categories</p><div className="flex flex-wrap gap-2">{CATS.map(([k, l]) => <Option key={k} variant="chip" role="checkbox" selected={cats.includes(k)} onClick={() => toggle(cats, setCats, k)}>{l}</Option>)}</div></div>
+        <div><p className="text-[13px] text-muted mb-2">Sources</p><div className="flex flex-wrap gap-2 items-center">
+          {SOURCES.map(([k, l]) => <Option key={k} variant="chip" role="checkbox" selected={sources.includes(k)} onClick={() => toggle(sources, setSources, k)}>{l}</Option>)}
+          {sources.filter((k) => OTHER_NAMES[k]).map((k) => <Option key={k} variant="chip" role="checkbox" selected onClick={() => toggle(sources, setSources, k)}>{OTHER_NAMES[k]} ×</Option>)}
+          <label className="sr-only" htmlFor="other-src">Add another news channel</label>
+          <select id="other-src" className={selectCls} value="" onChange={(e) => { const v = e.target.value; if (v && !sources.includes(v)) setSources([...sources, v]); }} title="Add a news channel from around the world">
+            <option value="">Other channels…</option>
+            {OTHER_SOURCES.map((g) => <optgroup key={g.region} label={g.region}>{g.items.map(([k, l]) => <option key={k} value={k} disabled={sources.includes(k)}>{l}</option>)}</optgroup>)}
+          </select>
+        </div></div>
+        <div><p className="text-[13px] text-muted mb-2">Categories</p><div className="flex flex-wrap gap-2 items-center">
+          {CATS.map(([k, l]) => <Option key={k} variant="chip" role="checkbox" selected={cats.includes(k)} onClick={() => toggle(cats, setCats, k)}>{l}</Option>)}
+          {cats.filter((k) => OTHER_CAT_NAMES[k]).map((k) => <Option key={k} variant="chip" role="checkbox" selected onClick={() => toggle(cats, setCats, k)}>{OTHER_CAT_NAMES[k]} ×</Option>)}
+          <label className="sr-only" htmlFor="other-cat">Add another topic</label>
+          <select id="other-cat" className={selectCls} value="" onChange={(e) => { const v = e.target.value; if (v && !cats.includes(v)) setCats([...cats, v]); }} title="Add another news topic">
+            <option value="">Other topics…</option>
+            {OTHER_CATS.map(([k, l]) => <option key={k} value={k} disabled={cats.includes(k)}>{l}</option>)}
+          </select>
+        </div></div>
       </div>
 
       {data?.failures?.length > 0 && <Notice tone="warning" className="mb-6">Couldn&apos;t reach {data.failures.join(", ")} just now. Showing the other sources.</Notice>}

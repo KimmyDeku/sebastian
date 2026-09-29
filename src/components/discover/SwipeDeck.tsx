@@ -50,7 +50,7 @@ export function SwipeDeck({ items, favs, onFav, onGo, fallbackImg }: { items: an
           onPointerDown={(e) => { start.current = e.clientX; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }}
           onPointerMove={(e) => start.current != null && setDx(e.clientX - start.current)}
           onPointerUp={release} onPointerCancel={release} aria-label={p.name}>
-          <Img src={p.photo || fallbackImg} alt={p.name} className="w-full h-60 pointer-events-none" />
+          <Img src={p.photo} fallback={fallbackImg} alt={p.name} label="" className="w-full h-60 pointer-events-none" />
           {!p.photo && <span className="absolute top-3 left-3 text-[10px] bg-white/90 rounded-full px-2 py-0.5">Illustrative photo</span>}
           <PlaceBody p={p} fav={favs.has(p.id)} />
           <span className={cx("absolute top-6 right-6 rounded-xl border-2 px-3 py-1 font-medium rotate-12 transition-opacity", dx > 40 ? "opacity-100 border-success text-success" : "opacity-0")}>GO</span>

@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Heart, MapPin, Star, LayoutGrid, List, SlidersHorizontal, RefreshCw, ExternalLink, Sparkles } from "lucide-react";
 import { Img } from "../ui/Img";
+import { GoogleMap } from "../GoogleMap";
 import { Button } from "../ui/Button";
 import { Notice, Skeleton, EmptyState } from "../ui/States";
 import { actions, useData } from "@/lib/store";
@@ -51,9 +52,18 @@ export function Results({ type, where, res, loading, onPick, onRefresh, fallback
 
   const filters = (
     <div className="space-y-5">
-      <a href={`https://www.google.com/maps/search/${encodeURIComponent(where)}`} target="_blank" rel="noopener noreferrer" className="relative block h-32 rounded-2xl overflow-hidden border border-line img-fallback">
-        <span className="absolute inset-0 flex items-center justify-center"><span className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-ink text-white text-sm"><MapPin className="w-4 h-4" />Show on map</span></span>
-      </a>
+      {items.some((i) => i.lat != null) ? (
+        <div>
+          <GoogleMap className="h-48 rounded-2xl border border-line" fit labels={false}
+            pins={items.filter((i) => i.lat != null).map((i) => ({ id: i.id, name: i.name, lat: i.lat, lng: i.lng }))}
+            onPick={(pin) => { const hit = items.find((x) => x.id === pin.id); if (hit) onPick(hit); }} />
+          <a href={`https://www.google.com/maps/search/${encodeURIComponent(where)}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-ink"><MapPin className="w-3.5 h-3.5" />Open in Google Maps</a>
+        </div>
+      ) : (
+        <a href={`https://www.google.com/maps/search/${encodeURIComponent(where)}`} target="_blank" rel="noopener noreferrer" className="relative block h-32 rounded-2xl overflow-hidden border border-line img-fallback">
+          <span className="absolute inset-0 flex items-center justify-center"><span className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-ink text-white text-sm"><MapPin className="w-4 h-4" />Show on map</span></span>
+        </a>
+      )}
       <div className="rounded-2xl border border-line bg-paper p-4">
         <p className="text-sm font-medium">Filter by</p>
         {ceiling > 0 && (
@@ -124,8 +134,8 @@ export function Results({ type, where, res, loading, onPick, onRefresh, fallback
           {shown.map((it, i) => (
             <article key={it.id} className={cx("bg-paper rounded-2xl border border-line overflow-hidden flex hover:border-cream-line transition-colors", view === "grid" ? "flex-col" : "flex-col sm:flex-row")}>
               <div className={cx("relative shrink-0", view === "list" && "sm:w-64")}>
-                <Img src={it.photo || fallbackImg[i % fallbackImg.length]} alt={it.name} className={cx("w-full", view === "grid" ? "h-48" : "h-48 sm:h-full")} />
-                {!it.photo && <span className="absolute bottom-2 left-2 text-[10px] bg-white/90 text-ink rounded-full px-2 py-0.5">Illustrative photo</span>}
+                <Img src={it.photo || it.ta?.photo} fallback={fallbackImg[i % fallbackImg.length]} alt={it.name} label="" className={cx("w-full", view === "grid" ? "h-48" : "h-48 sm:h-full")} />
+                {!it.photo && !it.ta?.photo && <span className="absolute bottom-2 left-2 text-[10px] bg-white/90 text-ink rounded-full px-2 py-0.5">Illustrative photo</span>}
                 {placeLike && <button onClick={() => save(it)} aria-pressed={saved.has(it.id)} aria-label={saved.has(it.id) ? "Remove from saved" : "Save"} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 shadow-soft inline-flex items-center justify-center"><Heart className={cx("w-4 h-4 text-gold", saved.has(it.id) && "fill-gold")} /></button>}
               </div>
               <div className="p-4 flex-1 flex flex-col min-w-0">

@@ -11,6 +11,7 @@ import { Img } from "@/components/ui/Img";
 import { VoiceButton } from "@/components/VoiceButton";
 import { SwipeDeck, PlaceBody } from "@/components/discover/SwipeDeck";
 import { EMERGENCY } from "@/components/discover/emergency";
+import { GoogleMap } from "@/components/GoogleMap";
 import { actions, useData } from "@/lib/store";
 import { api } from "@/lib/api";
 import { IMG } from "@/lib/images";
@@ -162,6 +163,11 @@ function DiscoverInner() {
             <p className="text-xs text-muted">Results from {res?.provider}. Hours and details can change; check before you go.</p>
             <Button size="sm" variant="outline" onClick={() => setPhase("pick")}>New search</Button>
           </div>
+          {ordered.some((p) => p.lat != null) && (
+            <GoogleMap className="h-[260px] md:h-[320px] rounded-3xl border border-line mb-5" fit labels={!mobile}
+              pins={ordered.filter((p) => p.lat != null).map((p) => ({ id: p.id, name: p.name, lat: p.lat, lng: p.lng }))}
+              center={res?.center || null} zoom={13} onPick={(pin) => { const hit = ordered.find((x) => x.id === pin.id); if (hit) setGo(hit); }} />
+          )}
           {ordered.length === 0 ? <EmptyState title="Nothing found" body={err || "Try a wider area or another category."} action={<Button onClick={() => setPhase("pick")}>Change search</Button>} />
             : mobile ? <SwipeDeck items={ordered} favs={favs} onFav={fav} onGo={setGo} fallbackImg={IMG_FOR[label] || IMG.cafe} />
             : (
@@ -169,7 +175,7 @@ function DiscoverInner() {
                 {ordered.map((p) => (
                   <article key={p.id} className="bg-paper rounded-3xl border border-line overflow-hidden flex flex-col">
                     <div className="relative">
-                      <Img src={p.photo || IMG_FOR[label]} alt={p.name} label="Business image unavailable" className="w-full h-44" />
+                      <Img src={p.photo} fallback={IMG_FOR[label] || IMG.cafe} alt={p.name} label="" className="w-full h-44" />
                       <button onClick={() => fav(p)} aria-pressed={favs.has(p.id)} aria-label={favs.has(p.id) ? "Remove from your choices" : "Save as your choice"} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/95 shadow-soft inline-flex items-center justify-center"><Heart className={cx("w-5 h-5 text-gold", favs.has(p.id) && "fill-gold")} /></button>
                     </div>
                     <PlaceBody p={p} fav={favs.has(p.id)} />

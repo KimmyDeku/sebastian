@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       try {
         const where = type === "stays" ? b.dest : b.where;
         const g = await searchPlaces({ category: type === "stays" ? "hotel" : "attraction", text: type === "stays" ? `${b.entireHome ? "apartments" : "hotels"} in ${where}` : `top attractions in ${where}`, where });
-        items = g.results.slice(0, 12).map((p: any) => ({ name: p.name, area: p.address, photo: p.photo, mapsUrl: p.mapsUrl, rating: p.rating, reviews: p.ratingCount, source: "Google" }));
+        items = g.results.slice(0, 12).map((p: any) => ({ name: p.name, area: p.address, photo: p.photo, mapsUrl: p.mapsUrl, rating: p.rating, reviews: p.ratingCount, lat: p.lat, lng: p.lng, source: "Google" }));
         if (items.length) sources.push("Google");
       } catch {}
     }

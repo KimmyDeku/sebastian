@@ -106,3 +106,9 @@ input[type="range"].range::-moz-range-thumb { width: 18px; height: 18px; border-
 .hljs-tag, .hljs-name, .hljs-selector-id, .hljs-selector-class, .hljs-deletion { color: #f07178; }
 .hljs-params, .hljs-punctuation, .hljs-operator { color: #e6e1d8; }
 .font-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+/* ---------- Drag-to-scroll and legibility ---------- */
+[data-drag-scroll] { cursor: grab; }
+[data-drag-scroll][data-dragging], [data-drag-scroll][data-dragging] * { cursor: grabbing !important; user-select: none; }
+h1, h2, h3, .t-h1, .t-h2, .t-h3, .t-display { overflow-wrap: anywhere; }
+body { overflow-wrap: break-word; }

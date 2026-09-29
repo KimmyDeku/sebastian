@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { ToastHost } from "@/components/ui/Toast";
 import { LiveTranslator } from "@/components/LiveTranslator";
+import { AssistLayer } from "@/components/AssistLayer";
 import { THEME_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <ToastHost />
         <LiveTranslator />
+        <AssistLayer />
       </body>
     </html>
   );

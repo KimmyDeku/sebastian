@@ -11,7 +11,7 @@ import { ChefMode } from "./ChefMode";
 import { clamp, normalizeRecipe } from "@/lib/util";
 
 export function RecipeDetail({ r: raw, initialServings, saved, onToggle, onClose }: { r: Recipe | null; initialServings?: number; saved: boolean; onToggle: () => void; onClose: () => void }) {
-    const r = raw ? normalizeRecipe(raw) : null;
+  const r = raw ? normalizeRecipe(raw) : null;
   const [serv, setServ] = useState(initialServings || r?.baseServings || 2);
   const [chef, setChef] = useState(false);
   if (!r) return null;
@@ -22,7 +22,8 @@ export function RecipeDetail({ r: raw, initialServings, saved, onToggle, onClose
       <Modal open={!!r && !chef} onClose={onClose} title={r.title} wide>
         <div className="grid md:grid-cols-[1fr_1.1fr] gap-7">
           <div>
-            <Img src={r.image} alt={r.title} label={r.generated ? "Sebastian's own recipe" : "Photo unavailable"} className="w-full aspect-[4/3] rounded-2xl" />
+            <Img src={r.image} food={r.title} alt={r.title} label="Photo unavailable" className="w-full aspect-[4/3] rounded-2xl" />
+            {!r.image && <p className="text-[11px] text-muted mt-1.5">Photo of a similar dish, from an openly licensed photo library.</p>}
             <p className="text-xs text-muted mt-3 flex items-center gap-1.5">{r.generated && <Sparkles className="w-3 h-3 text-glow" aria-hidden />}{r.source}{r.totalTime ? ` · ${r.totalTime}` : ""}</p>
             {r.generated && <Notice tone="ai" className="mt-3">This recipe was written by Sebastian rather than retrieved from a recipe site. Check quantities and cooking times as you go.</Notice>}
             {r.summary && <p className="text-sm text-muted mt-4 leading-relaxed">{r.summary}</p>}

@@ -69,12 +69,14 @@ function TravelInner() {
   const [del, setDel] = useState<Trip | null>(null);
   const [replanning, setReplanning] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLDivElement>(null);
   const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
   const { data: insp, loading: inspLoading } = useInspiration(stage === "plan" ? dest : "");
   const trip = d.trips.find((t) => t.id === tripId) || null;
 
   useEffect(() => { if (insp?.coords && !coords) setCoords(insp.coords); }, [insp, coords]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [step, log.length]);
+  // Bring the current question (for example the calendar) to the top of the screen.
+  useEffect(() => { if (stage === "plan") setTimeout(() => activeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }, [step, stage]);
 
   // Recommendations: Trip DNA plus the interests picked on the collage.
   const hasDNA = d.prefs.personalization && Object.keys(d.tripDNA.activities).length > 0;
@@ -215,8 +217,8 @@ function TravelInner() {
 
     return (
       <div className="max-w-[1500px] mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-28">
-        <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-5 items-start">
-          <section className="min-w-0 rounded-3xl border border-line bg-paper flex flex-col lg:sticky lg:top-4 lg:h-[calc(100vh-120px)] min-h-[520px]" aria-label="Plan with Sebastian">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-5 items-start">
+          <section className="min-w-0 rounded-3xl border border-line bg-paper flex flex-col" aria-label="Plan with Sebastian">
             <div className="px-5 pt-4 pb-3 border-b border-line">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0"><p className="t-kicker text-muted">Planning</p><p className="font-serif text-xl truncate">{dest}</p></div>
@@ -225,7 +227,7 @@ function TravelInner() {
               <div className="flex gap-1 mt-3" aria-label={`Step ${idx + 1} of ${ORDER.length}`}>{ORDER.map((s, i) => <span key={s} className={cx("h-1 flex-1 rounded-full", i <= idx ? "bg-gold" : "bg-line")} />)}</div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
+            <div className="px-4 md:px-5 py-4 space-y-3.5">
               <Bubble who="s">{who ? `${who}, ` : ""}{dest.split(",")[0]} it is. Browse the inspiration and the globe whenever you like, and tap a sight to add it to your plan.</Bubble>
               {log.map((m, i) => <Bubble key={i} who={m.who}>{m.text}</Bubble>)}
               {ORDER.slice(0, idx).filter((s) => s !== "ready").map((s) => (
@@ -234,15 +236,16 @@ function TravelInner() {
                   <Bubble who="u"><button onClick={() => setStep(s)} className="text-left">{answer(s)}<span className="block text-[10.5px] opacity-60 mt-0.5">Tap to change</span></button></Bubble>
                 </div>
               ))}
+              <div ref={activeRef} className="scroll-mt-24 space-y-3.5">
               <Bubble who="s">{Q[step]}</Bubble>
-              <div className="rounded-2xl border border-line p-4 ml-0 sm:ml-9 bg-paper">
+              <div className="rounded-2xl border border-line p-4 md:p-5 bg-paper">
                 {step === "dates" && (<>
-                  <div className="flex"><DateRangePicker label="Travel dates" startText="Departure" endText="Return" start={f.start} end={f.end} onChange={(a, b) => { set("start", a); set("end", b); }} /></div>
+                  <DateRangePicker inline startText="Departure" endText="Return" start={f.start} end={f.end} onChange={(a, b) => { set("start", a); set("end", b); }} />
                   {f.start && f.end && daysBetween(f.start, f.end) + 1 > 14 && <p className="text-[11.5px] text-warning mt-2">I&apos;ll plan the first 14 days in detail.</p>}
                   <Button size="sm" className="mt-3" onClick={next} disabled={!f.start || !f.end || f.end <= f.start || f.start < today}>Continue</Button>
                 </>)}
                 {step === "travellers" && (<>
-                  <div role="radiogroup" className="grid grid-cols-2 gap-2">{([["Solo", 1], ["Couple", 2], ["Family", 4], ["Friends", 4]] as [string, number][]).map(([g, n]) => <Option key={g} variant="row" selected={f.group === g} onClick={() => { set("group", g); set("travellers", n); }}>{g}</Option>)}</div>
+                  <div role="radiogroup" aria-label="Who's travelling" className="flex flex-wrap gap-2">{([["Solo", 1], ["Couple", 2], ["Family", 4], ["Friends", 4]] as [string, number][]).map(([g, n]) => <Option key={g} variant="chip" selected={f.group === g} onClick={() => { set("group", g); set("travellers", n); }}>{g}</Option>)}</div>
                   {(f.group === "Family" || f.group === "Friends") && <label className="block text-[12px] text-muted mt-3">How many people?<input type="number" min={2} max={30} className={inputCls + " mt-1 h-10"} value={f.travellers} onChange={(e) => set("travellers", Math.max(2, +e.target.value))} /></label>}
                   <Button size="sm" className="mt-3" onClick={next}>Continue</Button>
                 </>)}
@@ -258,7 +261,15 @@ function TravelInner() {
                   <Button size="sm" className="mt-3" onClick={next}>Continue</Button>
                 </>)}
                 {step === "extras" && (<>
-                  <div role="radiogroup" className="grid grid-cols-3 gap-2">{["Relaxed", "Balanced", "Packed"].map((p) => <Option key={p} variant="row" selected={f.pace === p} onClick={() => set("pace", p)}>{p}</Option>)}</div>
+                  <p className="text-[12px] text-muted mb-2">Pace</p>
+                  <div role="radiogroup" aria-label="Pace" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {([["Relaxed", "1 to 2 plans a day"], ["Balanced", "2 to 3 plans a day"], ["Packed", "See as much as possible"]] as [string, string][]).map(([p, sub]) => (
+                      <button key={p} type="button" role="radio" aria-checked={f.pace === p} onClick={() => set("pace", p)} title={`${p} pace: ${sub.toLowerCase()}`}
+                        className={cx("min-w-0 rounded-xl border px-3 py-2.5 text-left transition-colors", f.pace === p ? "bg-ink text-white border-ink" : "bg-paper border-line hover:border-cream-line")}>
+                        <span className="block text-[13.5px] font-medium">{p}</span><span className={cx("block text-[11.5px] leading-snug", f.pace === p ? "opacity-75" : "text-muted")}>{sub}</span>
+                      </button>
+                    ))}
+                  </div>
                   <input className={inputCls + " mt-3 h-10"} placeholder="Flying from (optional), e.g. Harare" value={f.origin} onChange={(e) => set("origin", e.target.value)} aria-label="Flying from" />
                   <input className={inputCls + " mt-2 h-10"} placeholder="Anything else? e.g. no early starts" value={f.notes} onChange={(e) => set("notes", e.target.value)} aria-label="Notes" />
                   <Button size="sm" className="mt-3" onClick={next}>Continue</Button>
@@ -272,6 +283,7 @@ function TravelInner() {
                   <Button className="mt-4 w-full" onClick={generate} loading={gen === "busy"}><Sparkles className="w-4 h-4" />Create my itinerary</Button>
                   {gen === "busy" && <p className="text-[12px] text-muted mt-2 text-center">Planning each day and checking local etiquette…</p>}
                 </>)}
+              </div>
               </div>
               {gen === "error" && <ErrorState title="I couldn't create the itinerary" body={genErr} onRetry={generate} />}
               <div ref={endRef} />
@@ -290,7 +302,7 @@ function TravelInner() {
             <Inspiration dest={dest} data={insp} loading={inspLoading} interests={interests} mustSee={f.mustSee}
               onToggleMustSee={(n) => set("mustSee", f.mustSee.includes(n) ? f.mustSee.filter((x) => x !== n) : [...f.mustSee, n])}
               onChoose={(n) => begin(n, { start: f.start, end: f.end })} />
-            <div className="h-[420px] lg:h-[480px]">
+            <div className="h-[380px] lg:h-[440px]">
               <Globe pins={pins} focus={coords} selected={dest} onPick={(p) => { if (p.name !== dest) begin(p.name, { start: f.start, end: f.end }); }} />
             </div>
           </div>
@@ -370,7 +382,7 @@ function EditTrip({ trip, onCancel, onSave }: { trip: Trip; onCancel: () => void
   return (
     <Modal open onClose={onCancel} title={`Edit trip to ${trip.destination.split(",")[0]}`}>
       <div className="space-y-4">
-        <div className="flex"><DateRangePicker label="Travel dates" startText="Departure" endText="Return" start={t.start} end={t.end} onChange={(a, b) => setT({ ...t, start: a, end: b })} /></div>
+        <DateRangePicker inline startText="Departure" endText="Return" start={t.start} end={t.end} onChange={(a, b) => setT({ ...t, start: a, end: b })} />
         <div className="grid grid-cols-2 gap-3">
           <label className="text-[12.5px] text-muted">Travellers<input type="number" min={1} max={30} className={inputCls + " mt-1"} value={t.travellers} onChange={(e) => setT({ ...t, travellers: Math.max(1, +e.target.value) })} /></label>
           <label className="text-[12.5px] text-muted">Budget ($)<input type="number" min={0} className={inputCls + " mt-1"} value={t.budget} onChange={(e) => setT({ ...t, budget: Math.max(0, +e.target.value) })} /></label>

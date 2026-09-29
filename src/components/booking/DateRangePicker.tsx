@@ -15,8 +15,8 @@ const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const GRID7: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" };
 const GOLD = "#B8823A";
 
-function Month({ year, month, start, end, hover, min, onPick, onHover }: {
-  year: number; month: number; start: string; end: string; hover: string; min: string; onPick: (d: string) => void; onHover: (d: string) => void;
+function Month({ year, month, start, end, hover, min, onPick, onHover, cell = 44 }: {
+  year: number; month: number; start: string; end: string; hover: string; min: string; onPick: (d: string) => void; onHover: (d: string) => void; cell?: number;
 }) {
   const first = new Date(year, month, 1);
   const days = new Date(year, month + 1, 0).getDate();
@@ -42,7 +42,7 @@ function Month({ year, month, start, end, hover, min, onPick, onHover }: {
             <button key={i} type="button" disabled={disabled} onClick={() => onPick(key)} onMouseEnter={() => onHover(key)}
               aria-label={parse(key).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               aria-pressed={picked}
-              style={{ height: 44, fontSize: 14, borderRadius: radius, background: picked ? GOLD : undefined, color: picked ? "#fff" : undefined, fontWeight: picked ? 600 : key === min ? 600 : 400 }}
+              style={{ height: cell, fontSize: cell < 44 ? 13.5 : 14, borderRadius: radius, background: picked ? GOLD : undefined, color: picked ? "#fff" : undefined, fontWeight: picked ? 600 : key === min ? 600 : 400 }}
               className={cx("transition-colors", disabled ? "text-muted-soft opacity-50 cursor-not-allowed" : !picked && "hover:bg-cream-deep", inRange && "bg-cream", !picked && key === min && "text-gold-deep underline underline-offset-4 decoration-gold")}>
               {d}
             </button>
@@ -53,9 +53,72 @@ function Month({ year, month, start, end, hover, min, onPick, onHover }: {
   );
 }
 
-/** Click check-in, then check-out. Set `single` to choose one date. */
-export function DateRangePicker({ start, end, onChange, label = "Check-in — Check-out", startText = "Check-in date", endText = "Check-out date", single = false }: {
-  start: string; end: string; onChange: (start: string, end: string) => void; label?: string; startText?: string; endText?: string; single?: boolean;
+/**
+ * A calendar that sits inside the page (for chats and small panels). It shows two months
+ * when there is room and one when there isn't.
+ */
+function InlineCalendar({ start, end, onChange, startText, endText, single }: { start: string; end: string; onChange: (a: string, b: string) => void; startText: string; endText: string; single: boolean }) {
+  const today = ymd(new Date());
+  const [hover, setHover] = useState("");
+  const base = start ? parse(start) : new Date();
+  const [view, setView] = useState({ y: base.getFullYear(), m: base.getMonth() });
+  const [twoUp, setTwoUp] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver(([e]) => setTwoUp(e.contentRect.width >= 720));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  const pick = (d: string) => {
+    if (single) { onChange(d, ""); return; }
+    if (!start || end || d <= start) { onChange(d, ""); return; }
+    onChange(start, d);
+  };
+  const move = (n: number) => setView((v) => { const d = new Date(v.y, v.m + n, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const nextMonth = new Date(view.y, view.m + 1, 1);
+  const now = new Date();
+  const atFirst = view.y === now.getFullYear() && view.m === now.getMonth();
+  const nights = start && end ? Math.round((parse(end).getTime() - parse(start).getTime()) / 86400000) : 0;
+  const arrow: React.CSSProperties = { position: "absolute", top: -4, width: 34, height: 34, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center" };
+  const chip = (label: string, value: string, active: boolean) => (
+    <div className={cx("flex-1 min-w-0 rounded-xl border px-3 py-2", active ? "border-gold bg-gold-soft/30" : "border-line")}>
+      <span className="block text-muted" style={{ fontSize: 10.5 }}>{label}</span>
+      <span className={cx("block truncate", value ? "text-ink" : "text-muted-soft")} style={{ fontSize: 13 }}>{value ? nice(value) : "Choose"}</span>
+    </div>
+  );
+  return (
+    <div ref={ref} style={{ width: "100%" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {chip(startText, start, !start || !!end)}
+        {!single && chip(endText, end, !!start && !end)}
+      </div>
+      <div style={{ position: "relative" }}>
+        <button type="button" onClick={() => move(-1)} disabled={atFirst} aria-label="Previous month" className="hover:bg-cream disabled:opacity-30" style={{ ...arrow, left: -4 }}><ChevronLeft className="w-5 h-5" /></button>
+        <button type="button" onClick={() => move(1)} aria-label="Next month" className="hover:bg-cream" style={{ ...arrow, right: -4 }}><ChevronRight className="w-5 h-5" /></button>
+        <div style={{ display: "grid", gridTemplateColumns: twoUp ? "1fr 1fr" : "1fr", columnGap: 28 }} onMouseLeave={() => setHover("")}>
+          <Month cell={38} year={view.y} month={view.m} start={start} end={end} hover={hover} min={today} onPick={pick} onHover={setHover} />
+          {twoUp && <Month cell={38} year={nextMonth.getFullYear()} month={nextMonth.getMonth()} start={start} end={end} hover={hover} min={today} onPick={pick} onHover={setHover} />}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        <span className="text-muted" style={{ fontSize: 12.5 }}>{nights ? `${nights} night${nights > 1 ? "s" : ""}` : single ? "" : start ? `Now choose your ${endText.toLowerCase()}` : ""}</span>
+        {(start || end) && <button type="button" onClick={() => onChange("", "")} className="text-muted hover:text-ink" style={{ fontSize: 12.5 }}>Clear</button>}
+      </div>
+    </div>
+  );
+}
+
+/** Click check-in, then check-out. Set `single` to choose one date, `inline` to show it inside the page. */
+export function DateRangePicker({ start, end, onChange, label = "Check-in — Check-out", startText = "Check-in date", endText = "Check-out date", single = false, inline = false }: {
+  start: string; end: string; onChange: (start: string, end: string) => void; label?: string; startText?: string; endText?: string; single?: boolean; inline?: boolean;
+}) {
+  if (inline) return <InlineCalendar start={start} end={end} onChange={onChange} startText={startText} endText={endText} single={single} />;
+  return <PopupPicker start={start} end={end} onChange={onChange} label={label} startText={startText} endText={endText} single={single} />;
+}
+
+function PopupPicker({ start, end, onChange, label, startText, endText, single }: {
+  start: string; end: string; onChange: (start: string, end: string) => void; label: string; startText: string; endText: string; single: boolean;
 }) {
   const today = ymd(new Date());
   const [open, setOpen] = useState(false);
