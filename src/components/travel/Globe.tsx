@@ -35,7 +35,7 @@ export function Globe({ pins, focus, selected, onPick }: { pins: Pin[]; focus?: 
     let dead = false;
     (async () => {
       try {
-        const ml = (await import("maplibre-gl")).default;
+          const mod: any = await import("maplibre-gl"); const ml = mod.default ?? mod;
         if (dead || !box.current) return;
         lib.current = ml;
         const m = new ml.Map({ container: box.current, style: "https://tiles.openfreemap.org/styles/liberty", center: [22, 8], zoom: 1.2, attributionControl: { compact: true }, dragRotate: false, pitchWithRotate: false });
