@@ -1,12 +1,30 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { ToastHost } from "@/components/ui/Toast";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Sebastian — your intelligent concierge",
   description: "Finding, planning and discovering, with a butler's composure.",
   icons: { icon: "/favicon.svg" },
 };
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SCQCE67YJB" strategy="afterInteractive" />
+        <Script id="ga4" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SCQCE67YJB');`}
+        </Script>
+      </body>
+    </html>
+  );
+}
 
 export const viewport: Viewport = {
   width: "device-width",
