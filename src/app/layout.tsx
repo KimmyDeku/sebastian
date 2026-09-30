@@ -8,7 +8,10 @@ import { THEME_SCRIPT } from "@/lib/theme";
 export const metadata: Metadata = {
   title: "Sebastian — your intelligent concierge",
   description: "Finding, planning and discovering, with a butler's composure.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/icons/apple-touch-icon.png" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Sebastian", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {

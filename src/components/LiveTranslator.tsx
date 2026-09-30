@@ -1,4 +1,5 @@
 "use client";
+import "@/lib/polyfills";
 import { useEffect, useState } from "react";
 import { Languages } from "lucide-react";
 import { applyLanguage, onTranslateBusy, onTranslateError, startTranslator } from "@/lib/translator";

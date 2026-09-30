@@ -1,7 +1,8 @@
 import * as cheerio from "cheerio";
 import { fetchText } from "./http";
 
-export const NEWS_SOURCES: Record<string, { name: string; home: string; feeds: Record<string, string> }> = {
+// `site: true` = a WordPress news site: if its feed fails, Sebastian reads the site itself.
+export const NEWS_SOURCES: Record<string, { name: string; home: string; feeds: Record<string, string>; site?: boolean }> = {
   bbc: { name: "BBC", home: "https://www.bbc.com/news", feeds: {
     top: "https://feeds.bbci.co.uk/news/rss.xml", science: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
     technology: "https://feeds.bbci.co.uk/news/technology/rss.xml", politics: "https://feeds.bbci.co.uk/news/politics/rss.xml",
@@ -27,7 +28,7 @@ export const NEWS_SOURCES: Record<string, { name: string; home: string; feeds: R
     technology: "https://moxie.foxnews.com/google-publisher/tech.xml", science: "https://moxie.foxnews.com/google-publisher/science.xml",
     social: "https://moxie.foxnews.com/google-publisher/health.xml", world: "https://moxie.foxnews.com/google-publisher/world.xml",
     sport: "https://moxie.foxnews.com/google-publisher/sports.xml", entertainment: "https://moxie.foxnews.com/google-publisher/entertainment.xml", travel: "https://moxie.foxnews.com/google-publisher/travel.xml", health: "https://moxie.foxnews.com/google-publisher/health.xml" } },
-  zbc: { name: "ZBC News", home: "https://www.zbcnews.co.zw/", feeds: { top: "https://www.zbcnews.co.zw/feed/" } },
+  zbc: { name: "ZBC News", home: "https://www.zbcnews.co.zw/", feeds: { top: "https://www.zbcnews.co.zw/feed/" }, site: true },
   // ---- Other channels around the world ----
   guardian: { name: "The Guardian", home: "https://www.theguardian.com/", feeds: {
     top: "https://www.theguardian.com/world/rss", world: "https://www.theguardian.com/world/rss", science: "https://www.theguardian.com/science/rss",
@@ -48,8 +49,8 @@ export const NEWS_SOURCES: Record<string, { name: string; home: string; feeds: R
   japantimes: { name: "The Japan Times", home: "https://www.japantimes.co.jp/", feeds: { top: "https://www.japantimes.co.jp/feed/" } },
   cna: { name: "CNA (Singapore)", home: "https://www.channelnewsasia.com/", feeds: { top: "https://www.channelnewsasia.com/rssfeeds/8395986" } },
   news24: { name: "News24 (South Africa)", home: "https://www.news24.com/", feeds: { top: "https://feeds.news24.com/articles/news24/TopStories/rss" } },
-  herald: { name: "The Herald (Zimbabwe)", home: "https://www.herald.co.zw/", feeds: { top: "https://www.herald.co.zw/feed/" } },
-  newsday: { name: "NewsDay (Zimbabwe)", home: "https://www.newsday.co.zw/", feeds: { top: "https://www.newsday.co.zw/feed/" } },
+  herald: { name: "The Herald (Zimbabwe)", home: "https://www.herald.co.zw/", feeds: { top: "https://www.herald.co.zw/feed/" }, site: true },
+  newsday: { name: "NewsDay (Zimbabwe)", home: "https://www.newsday.co.zw/", feeds: { top: "https://www.newsday.co.zw/feed/" }, site: true },
   rte: { name: "RTÉ (Ireland)", home: "https://www.rte.ie/news/", feeds: { top: "https://www.rte.ie/feeds/rss/?index=/news/" } },
 };
 
@@ -106,6 +107,49 @@ async function readFeed(sourceKey: string, cat: string, url: string): Promise<Ne
   return items;
 }
 
+const statusOf = (title: string, published?: string): NewsItem["status"] => {
+  const ageH = published ? (Date.now() - new Date(published).getTime()) / 3.6e6 : 99;
+  return /breaking|^live[:\s]/i.test(title) || ageH < 1 ? "breaking" : /live|update|developing|latest/i.test(title) || ageH < 6 ? "developing" : "latest";
+};
+const plain = (html: string) => cheerio.load(`<div>${html || ""}</div>`)("div").text().replace(/\s+/g, " ").trim();
+
+/** WordPress sites publish their latest articles at /wp-json/wp/v2/posts. */
+async function readWordPress(sourceKey: string, cat: string, home: string): Promise<NewsItem[]> {
+  const base = home.replace(/\/$/, "");
+  const raw = await fetchText(`${base}/wp-json/wp/v2/posts?per_page=24&_embed=wp:featuredmedia`, 9000, { accept: "application/json" });
+  const posts = JSON.parse(raw);
+  if (!Array.isArray(posts)) throw new Error("no posts");
+  return posts.map((p: any) => {
+    const title = plain(p.title?.rendered);
+    const published = p.date_gmt ? new Date(p.date_gmt + "Z").toISOString() : p.date ? new Date(p.date).toISOString() : undefined;
+    const media = p._embedded?.["wp:featuredmedia"]?.[0];
+    return { id: `${sourceKey}:${p.link}`, source: sourceKey, sourceName: NEWS_SOURCES[sourceKey].name, title, summary: plain(p.excerpt?.rendered).slice(0, 240), link: p.link,
+      image: media?.media_details?.sizes?.medium_large?.source_url || media?.source_url || undefined, published, category: cat, status: statusOf(title, published) } as NewsItem;
+  }).filter((x: NewsItem) => x.title && x.link?.startsWith("http"));
+}
+
+/** Last resort: read the headlines straight off the homepage. */
+async function readHomepage(sourceKey: string, cat: string, home: string): Promise<NewsItem[]> {
+  const $ = cheerio.load(await fetchText(home, 9000));
+  const host = new URL(home).hostname.replace(/^www\./, "");
+  const out: NewsItem[] = [];
+  const seen = new Set<string>();
+  const add = (title: string, link: string, image?: string, summary = "") => {
+    title = title.replace(/\s+/g, " ").trim();
+    if (title.length < 25 || seen.has(link)) return;
+    try { const u = new URL(link, home); if (!u.hostname.endsWith(host) || u.pathname.split("/").filter(Boolean).length < 1 || /\/(category|tag|author|page)\//.test(u.pathname)) return; link = u.toString(); } catch { return; }
+    seen.add(link);
+    out.push({ id: `${sourceKey}:${link}`, source: sourceKey, sourceName: NEWS_SOURCES[sourceKey].name, title, summary: summary.slice(0, 240), link, image, category: cat, status: "latest" });
+  };
+  $("article").each((_, el) => {
+    const a = $(el).find("h1 a, h2 a, h3 a, .entry-title a, .post-title a").first();
+    const img = $(el).find("img").first();
+    add(a.text(), a.attr("href") || "", img.attr("data-src") || img.attr("data-lazy-src") || img.attr("src") || undefined, $(el).find("p, .excerpt, .entry-summary").first().text());
+  });
+  if (out.length < 5) $("h2 a, h3 a").each((_, el) => { add($(el).text(), $(el).attr("href") || ""); });
+  return out.slice(0, 24);
+}
+
 async function ogImage(url: string) {
   try {
     const html = await fetchText(url, 4000);
@@ -126,8 +170,13 @@ export async function getNews(sources: string[], categories: string[]) {
       const key = url + "|" + c;
       if (used.has(key)) continue;
       used.add(key);
+      const fromSite = () => readWordPress(s, c, src.home).then((x) => (x.length ? x : readHomepage(s, c, src.home))).catch(() => readHomepage(s, c, src.home));
+      const filterCat = (items: NewsItem[]) => (src.feeds[c] || c === "top" ? items : items.filter((x) => (KEYWORDS[c] || /./).test(x.title + " " + x.summary)));
       jobs.push(
-        readFeed(s, c, url).then((items) => (src.feeds[c] || c === "top" ? items : items.filter((x) => (KEYWORDS[c] || /./).test(x.title + " " + x.summary))))
+        readFeed(s, c, url)
+          .then((items) => (items.length || !src.site ? items : fromSite()))
+          .catch(() => (src.site ? fromSite() : Promise.reject()))
+          .then(filterCat)
           .catch(() => { failures.push(src.name); return []; })
       );
     }

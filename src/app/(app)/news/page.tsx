@@ -3,6 +3,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { Container, PageHeader } from "@/components/ui/Page";
+import { Verified } from "@/components/news/Verified";
 import { Option } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, ErrorState, Notice, Skeleton } from "@/components/ui/States";
@@ -65,8 +66,8 @@ function NewsInner() {
         right={<Button size="sm" variant="outline" onClick={load} loading={state === "loading"}><RefreshCw className="w-4 h-4" />Refresh</Button>} />
       <div className="space-y-4 mb-10">
         <div><p className="text-[13px] text-muted mb-2">Sources</p><div className="flex flex-wrap gap-2 items-center">
-          {SOURCES.map(([k, l]) => <Option key={k} variant="chip" role="checkbox" selected={sources.includes(k)} onClick={() => toggle(sources, setSources, k)}>{l}</Option>)}
-          {sources.filter((k) => OTHER_NAMES[k]).map((k) => <Option key={k} variant="chip" role="checkbox" selected onClick={() => toggle(sources, setSources, k)}>{OTHER_NAMES[k]} ×</Option>)}
+          {SOURCES.map(([k, l]) => <span key={k} className="inline-flex items-center gap-1"><Option variant="chip" role="checkbox" selected={sources.includes(k)} onClick={() => toggle(sources, setSources, k)}>{l}</Option><Verified /></span>)}
+          {sources.filter((k) => OTHER_NAMES[k]).map((k) => <span key={k} className="inline-flex items-center gap-1"><Option variant="chip" role="checkbox" selected onClick={() => toggle(sources, setSources, k)}>{OTHER_NAMES[k]} ×</Option><Verified /></span>)}
           <label className="sr-only" htmlFor="other-src">Add another news channel</label>
           <select id="other-src" className={selectCls} value="" onChange={(e) => { const v = e.target.value; if (v && !sources.includes(v)) setSources([...sources, v]); }} title="Add a news channel from around the world">
             <option value="">Other channels…</option>
@@ -94,7 +95,7 @@ function NewsInner() {
           <a href={lead.link} target="_blank" rel="noopener noreferrer" className="group grid lg:grid-cols-[1.3fr_1fr] rounded-3xl bg-paper border border-line overflow-hidden mb-8">
             <Img src={lead.image || IMG.news} alt="" className="w-full h-64 lg:h-full min-h-[280px]" />
             <div className="p-7 md:p-9 flex flex-col">
-              <div className="flex items-center gap-2"><Badge s={lead.status} /><span className="text-xs text-muted">{lead.sourceName}{lead.published ? ` · ${relTime(lead.published)}` : ""}</span></div>
+              <div className="flex items-center gap-2"><Badge s={lead.status} /><span className="text-xs text-muted inline-flex items-center gap-1">{lead.sourceName}<Verified size={13} />{lead.published ? ` · ${relTime(lead.published)}` : ""}</span></div>
               <h2 className="t-h1 mt-3 group-hover:underline decoration-1 underline-offset-4">{lead.title}</h2>
               <p className="text-muted mt-3 leading-relaxed">{lead.summary}</p>
               <span className="mt-auto pt-6 inline-flex items-center gap-2 text-sm">Open story on {host(lead.link)}<ExternalLink className="w-4 h-4" aria-hidden /></span>
@@ -105,7 +106,7 @@ function NewsInner() {
               <a key={n.id} href={n.link} target="_blank" rel="noopener noreferrer" className="group rounded-3xl bg-paper border border-line overflow-hidden flex flex-col hover:border-cream-line">
                 {n.image && <Img src={n.image} alt="" className="w-full h-44" />}
                 <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex items-center gap-2 flex-wrap"><Badge s={n.status} /><span className="text-xs text-muted">{n.sourceName}{n.published ? ` · ${relTime(n.published)}` : ""}</span></div>
+                  <div className="flex items-center gap-2 flex-wrap"><Badge s={n.status} /><span className="text-xs text-muted inline-flex items-center gap-1">{n.sourceName}<Verified size={13} />{n.published ? ` · ${relTime(n.published)}` : ""}</span></div>
                   <h3 className="font-serif text-[1.25rem] leading-snug mt-2 group-hover:underline decoration-1 underline-offset-4">{n.title}</h3>
                   {n.summary && <p className="text-[13px] text-muted mt-2 line-clamp-3">{n.summary}</p>}
                   <span className="mt-auto pt-4 inline-flex items-center gap-1.5 text-xs text-ink">Open story on {host(n.link)}<ExternalLink className="w-3.5 h-3.5" aria-hidden /></span>

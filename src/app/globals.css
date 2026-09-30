@@ -119,3 +119,15 @@ body { overflow-wrap: break-word; }
   50% { box-shadow: 0 0 0 1px rgba(184,130,58,.45), 0 0 20px rgba(184,130,58,.38); }
 }
 .glow-gold { animation: sebGlow 2.8s ease-in-out infinite; }
+
+/* ---------- Cross-browser comfort ---------- */
+html { -webkit-tap-highlight-color: transparent; }
+/* iPhones zoom into form fields with text under 16px; keep them at 16px on phones. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+}
+/* Smooth momentum scrolling in older iOS Safari */
+.overflow-x-auto, .overflow-y-auto { -webkit-overflow-scrolling: touch; }
+/* Firefox: thin, quiet scrollbars */
+* { scrollbar-width: thin; scrollbar-color: rgba(154,149,141,.5) transparent; }
+.no-scrollbar { scrollbar-width: none; }

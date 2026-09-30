@@ -3,17 +3,18 @@ import { useStore, emptyData } from "./store";
 import { uid } from "./util";
 
 /* ---------- Notebook data (kept with the rest of the user's data) ---------- */
-export type Source = { id: string; title: string; text: string; url?: string; addedAt: string };
+export type Source = { id: string; title: string; text: string; url?: string; addedAt: string; driveId?: string; size?: number; offloaded?: boolean };
 export type NoteMsg = { role: "user" | "assistant"; content: string };
 export type PastChat = { id: string; at: string; chat: NoteMsg[] };
-export type Notebook = { id: string; title: string; sources: Source[]; chat: NoteMsg[]; history?: PastChat[]; createdAt: string; updatedAt: string };
+export type Notebook = { id: string; title: string; sources: Source[]; chat: NoteMsg[]; history?: PastChat[]; createdAt: string; updatedAt: string; driveDocId?: string; driveUrl?: string; syncedAt?: string };
 export type CodeChat = { id: string; title: string; language: string; messages: NoteMsg[]; createdAt: string; updatedAt: string };
 export type QuizResult = { id: string; topic: string; score: number; total: number; weak: string[]; at: string };
 export type TutorSubject = { id: string; subject: string; level: string; topics: string[]; chat: NoteMsg[]; history?: PastChat[]; quizzes: QuizResult[]; createdAt: string };
 export type Assignment = { id: string; subject: string; title: string; brief: string; due: string; length: string; plan: any | null; feedback: any | null; createdAt: string };
 export type LangState = { language: string; level: string; xp: number; streak: number; lastDay: string; lessons: number; history: { at: string; correct: number; total: number; topic: string }[] };
 export type UsageEntry = { at: string; model: string; input: number; output: number; cost?: number; where: string; provider?: string };
-export type NotebookData = { notebooks: Notebook[]; tutor: TutorSubject[]; assignments: Assignment[]; langs: LangState[]; codeChat: NoteMsg[]; codeChats: CodeChat[]; codingUsage: UsageEntry[] };
+export type DriveState = { connected: boolean; email?: string; folderId?: string; sourcesFolderId?: string; offload?: boolean };
+export type NotebookData = { drive?: DriveState; notebooks: Notebook[]; tutor: TutorSubject[]; assignments: Assignment[]; langs: LangState[]; codeChat: NoteMsg[]; codeChats: CodeChat[]; codingUsage: UsageEntry[] };
 
 const EMPTY: NotebookData = { notebooks: [], tutor: [], assignments: [], langs: [], codeChat: [], codeChats: [], codingUsage: [] };
 

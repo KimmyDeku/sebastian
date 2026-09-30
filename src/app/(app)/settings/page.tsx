@@ -9,7 +9,9 @@ import {
 import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "@/components/billing/Checkout";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
 import { useNotebook, patchNotebook } from "@/lib/notebook";
-import { Gauge } from "lucide-react";
+import { Gauge, Cloud } from "lucide-react";
+import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
+import { clientId as driveClientId } from "@/lib/drive";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { Field, inputCls, Option } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
@@ -314,6 +316,22 @@ export default function Settings() {
               </div>
             );
           })()}
+        </Section>
+
+        <Section id="drive" icon={Cloud} title="Google Drive" summary={nb.drive?.connected ? `Connected${nb.drive.email ? ` · ${nb.drive.email}` : ""}` : "Sync notebooks and imported files"} open={!!open.drive} onToggle={() => toggle("drive")}>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted">Research notebooks are kept as Google Docs in a &ldquo;Sebastian Notebooks&rdquo; folder, so you can add them to NotebookLM and refresh them with its &ldquo;Sync with Google Drive&rdquo; button. Sebastian can only see the files it creates in your Drive.</p>
+            {!driveClientId() ? <Notice>Google Drive isn&apos;t set up on this server yet (NEXT_PUBLIC_GOOGLE_CLIENT_ID).</Notice> : nb.drive?.connected ? (
+              <>
+                <p className="text-sm inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-success" />Connected{nb.drive.email ? ` as ${nb.drive.email}` : ""}</p>
+                <Toggle label="Store imported files in Google Drive" desc="Uploaded files and web pages are saved in your Drive. Sebastian keeps a short preview here and reads the full text from Drive when it needs it, which saves space in Sebastian." on={nb.drive.offload !== false} set={(v) => patchNotebook((n) => ({ ...n, drive: { ...n.drive!, offload: v } }))} />
+                <div className="flex flex-wrap gap-2">
+                  {nb.drive.folderId && <Button size="sm" variant="outline" href={`https://drive.google.com/drive/folders/${nb.drive.folderId}`} external>Open the folder in Drive</Button>}
+                  <Button size="sm" variant="ghost" onClick={disconnectDrive}>Disconnect</Button>
+                </div>
+              </>
+            ) : <Button onClick={async () => { try { await connectDrive(); } catch (e: any) { toast.error(e?.message || "Google Drive couldn't connect."); } }}><Cloud className="w-4 h-4" />Connect Google Drive</Button>}
+          </div>
         </Section>
 
         <Section id="prefs" icon={SlidersHorizontal} title="Preferences" summary="Appearance, form of address, voice and reminders" open={!!open.prefs} onToggle={() => toggle("prefs")}>

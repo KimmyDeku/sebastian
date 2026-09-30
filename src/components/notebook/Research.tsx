@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 import { Plus, FileText, Link2, Upload, Trash2, Send, BookMarked, ListChecks, HelpCircle, Layers, Sparkles, ExternalLink, Loader2, MessageSquarePlus, Download } from "lucide-react";
 import { PastChats } from "./PastChats";
+import { DriveBar, offloadSource, sourcesForAI } from "./DriveSync";
+import { removeFile } from "@/lib/drive";
 import { Button } from "../ui/Button";
 import { Field, inputCls, textareaCls } from "../ui/Chip";
 import { Modal, ConfirmDialog } from "../ui/Modal";
@@ -91,26 +93,28 @@ export function Research() {
     const history = cur.chat;
     update(cur.id, (n) => ({ ...n, chat: [...n.chat, { role: "user", content: question }] }));
     setQ(""); setBusy("ask");
-    const r = await api<any>("/api/notebook", { mode: "ask", sources: cur.sources, question, history });
+    const r = await api<any>("/api/notebook", { mode: "ask", sources: await sourcesForAI(cur), question, history });
     setBusy(null);
     update(cur.id, (n) => ({ ...n, chat: [...n.chat, { role: "assistant", content: r.ok ? r.reply : `I couldn't answer that: ${r.error}` }] }));
   };
   const guide = async (kind: "summary" | "study" | "faq") => {
     if (!cur) return;
     setBusy(kind);
-    const r = await api<any>("/api/notebook", { mode: "guide", kind, sources: cur.sources });
+    const r = await api<any>("/api/notebook", { mode: "guide", kind, sources: await sourcesForAI(cur) });
     setBusy(null);
     const label = { summary: "Summary", study: "Study guide", faq: "FAQ" }[kind];
     update(cur.id, (n) => ({ ...n, chat: [...n.chat, { role: "user", content: `Make a ${label.toLowerCase()}` }, { role: "assistant", content: r.ok ? r.reply : `That couldn't be made: ${r.error}` }] }));
   };
-  const makeCards = async () => { if (!cur) return; setBusy("cards"); const r = await api<any>("/api/notebook", { mode: "flashcards", sources: cur.sources }); setBusy(null); if (r.ok) { setCards(r.cards); setFlipped({}); } else toast.error(r.error || "Flashcards couldn't be made."); };
-  const makeQuiz = async () => { if (!cur) return; setBusy("quiz"); const r = await api<any>("/api/notebook", { mode: "quiz", sources: cur.sources, count: 6 }); setBusy(null); if (r.ok && r.questions.length) setQuiz(r.questions); else toast.error(r.error || "A quiz couldn't be made."); };
+  const makeCards = async () => { if (!cur) return; setBusy("cards"); const r = await api<any>("/api/notebook", { mode: "flashcards", sources: await sourcesForAI(cur) }); setBusy(null); if (r.ok) { setCards(r.cards); setFlipped({}); } else toast.error(r.error || "Flashcards couldn't be made."); };
+  const makeQuiz = async () => { if (!cur) return; setBusy("quiz"); const r = await api<any>("/api/notebook", { mode: "quiz", sources: await sourcesForAI(cur), count: 6 }); setBusy(null); if (r.ok && r.questions.length) setQuiz(r.questions); else toast.error(r.error || "A quiz couldn't be made."); };
 
   if (!nb.notebooks.length)
-    return <EmptyState title="Start your first notebook" body="Add lecture notes, articles or web pages, and I'll answer questions using only those sources, with citations." action={<Button onClick={create}><Plus className="w-4 h-4" />New notebook</Button>} />;
+    return <><DriveBar current={null} /><EmptyState title="Start your first notebook" body="Add lecture notes, articles or web pages, and I'll answer questions using only those sources, with citations." action={<Button onClick={create}><Plus className="w-4 h-4" />New notebook</Button>} /></>;
 
   const hasSources = !!cur?.sources.length;
   return (
+    <>
+    <DriveBar current={cur} />
     <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5 items-start">
       <aside className="space-y-3">
         <Button className="w-full" onClick={create}><Plus className="w-4 h-4" />New notebook</Button>
@@ -134,8 +138,8 @@ export function Research() {
             <div className="flex flex-wrap gap-2 mt-3">
               {cur.sources.map((s, i) => (
                 <span key={s.id} className="inline-flex items-center gap-1.5 h-8 pl-3 pr-1 rounded-pill bg-cream text-[12.5px] max-w-full">
-                  <span className="text-gold-deep font-medium">[{i + 1}]</span><span className="truncate max-w-[180px]">{s.title}</span>
-                  <button onClick={() => update(cur.id, (n) => ({ ...n, sources: n.sources.filter((x) => x.id !== s.id) }))} aria-label={`Remove ${s.title}`} className="w-6 h-6 rounded-full hover:bg-cream-deep inline-flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
+                  <span className="text-gold-deep font-medium">[{i + 1}]</span><span className="truncate max-w-[180px]">{s.title}</span>{s.driveId && <span className="text-[10.5px] text-muted" title="Stored in your Google Drive">· Drive</span>}
+                  <button onClick={() => { if (s.driveId) removeFile(s.driveId); update(cur.id, (n) => ({ ...n, sources: n.sources.filter((x) => x.id !== s.id) })); }} aria-label={`Remove ${s.title}`} className="w-6 h-6 rounded-full hover:bg-cream-deep inline-flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
                 </span>
               ))}
               <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-pill border border-dashed border-cream-line text-[12.5px] hover:bg-cream/60"><Plus className="w-3.5 h-3.5" />Add source</button>
@@ -191,9 +195,15 @@ export function Research() {
         </section>
       )}
 
-      {adding && cur && <AddSource onClose={() => setAdding(false)} onAdd={(s) => { update(cur.id, (n) => ({ ...n, sources: [...n.sources, { ...s, id: newId("src_"), addedAt: new Date().toISOString() }] })); setAdding(false); toast.success("Source added."); }} />}
-      <ConfirmDialog open={!!del} danger title="Delete this notebook?" body="Its sources and conversation will be removed." confirmLabel="Delete"
+      {adding && cur && <AddSource onClose={() => setAdding(false)} onAdd={async (s) => {
+        setAdding(false);
+        const src = await offloadSource({ ...s, id: newId("src_"), addedAt: new Date().toISOString() });
+        update(cur.id, (n) => ({ ...n, sources: [...n.sources, src] }));
+        toast.success(src.driveId ? (src.offloaded ? "Source added. The full file is stored in your Google Drive." : "Source added and saved to your Google Drive.") : "Source added.");
+      }} />}
+      <ConfirmDialog open={!!del} danger title="Delete this notebook?" body={del?.driveDocId ? "Its sources and conversation will be removed from Sebastian. Its Google Doc stays in your Drive." : "Its sources and conversation will be removed."} confirmLabel="Delete"
         onCancel={() => setDel(null)} onConfirm={() => { patchNotebook((d) => ({ ...d, notebooks: d.notebooks.filter((n) => n.id !== del!.id) })); setOpenId(null); setDel(null); }} />
     </div>
+    </>
   );
 }
