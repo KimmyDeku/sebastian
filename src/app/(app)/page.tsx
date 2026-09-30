@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, UtensilsCrossed, Plane, CalendarDays, MapPin, Clock, BarChart3, Newspaper, Shirt, BookOpen, PiggyBank } from "lucide-react";
+import { ArrowRight, UtensilsCrossed, Plane, CalendarDays, MapPin, Clock, BarChart3, Newspaper, Shirt, BookOpen, PiggyBank, Pen, Mail } from "lucide-react";
 import { Composer } from "@/components/Composer";
 import { SUITES } from "@/components/shell/nav";
 import { useAccount, useData, actions } from "@/lib/store";
@@ -18,7 +18,7 @@ const CHIPS = [
   { label: "Plan a trip", href: "/travel", icon: Plane },
   { label: "Plan my week", href: "/schedule", icon: Clock },
   { label: "Review finances", href: "/finance", icon: BarChart3 },
-  { label: "Read the news", href: "/news", icon: Newspaper },
+  { label: "Draft & read emails", href: "/email", icon: Mail },
 ];
 
 type CardP = { kicker: string; title: string; body: string; cta: string; href: string; img: string; alt: string; tone: "dark" | "light"; className?: string; tall?: boolean };

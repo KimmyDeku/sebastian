@@ -12,6 +12,7 @@ export function localIntent(t: string): { route: string; params: Record<string, 
     [/near|nearby|pharmac|restaurant|cafe|coffee|mechanic|mall|cinema|park/, "discover", "Find nearby"],
     [/schedule|remind|appointment|meeting|calendar|birthday/, "schedule", "Open schedule"],
     [/budget|saving|expense|income|finance|money|spend/, "finance", "Review finances"],
+    [/\b(e-?mail|gmail|inbox)\b/, "email", "Draft & read emails"],
     [/news|headline|breaking/, "news", "Read the news"],
     [/outfit|dress|hair|skin|fashion|wear|style/, "fashion", "Get style ideas"],
   ];

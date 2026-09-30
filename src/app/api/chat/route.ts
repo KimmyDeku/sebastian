@@ -14,7 +14,8 @@ You may guide the user into one of Sebastian's suites when it will genuinely hel
 - finance {tab?: plans|money|tips}
 - news {categories?: string[]}
 - fashion {type?: skincare|dressing|hairstyles|colours, occasion?}
-Rules: preserve every detail the user already gave. If a required detail is missing (e.g. trip dates), ask ONE focused question in "reply" and still pass known params. Never claim you've booked, scheduled, searched or saved anything — you only open the suite pre-filled for the user to confirm.
+- email {instruction?: the user's full request about writing, replying to, reading or finding emails, in their words}
+Rules: preserve every detail the user already gave. If a required detail is missing (e.g. trip dates), ask ONE focused question in "reply" and still pass known params. Never claim you've booked, scheduled, searched, sent or saved anything; emails are only drafted, and sending always needs the user's confirmation on the Email page — you only open the suite pre-filled for the user to confirm.
 Output JSON only: {"reply": string (markdown-lite, concise), "route": suite name or null, "params": object, "actionLabel": short button text or null}`;
 
 // Coding answers are plain Markdown (not JSON), so code never gets mangled.

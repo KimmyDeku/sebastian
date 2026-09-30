@@ -9,7 +9,9 @@ import {
 import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "@/components/billing/Checkout";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
 import { useNotebook, patchNotebook } from "@/lib/notebook";
-import { Gauge, Cloud } from "lucide-react";
+import { Gauge, Cloud, AtSign } from "lucide-react";
+import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
+import { grantGmail } from "@/components/email/Permission";
 import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
 import { clientId as driveClientId } from "@/lib/drive";
 import { Container, PageHeader } from "@/components/ui/Page";
@@ -82,6 +84,7 @@ export default function Settings() {
   const acc = useAccount();
   const d = useData();
   const nb = useNotebook();
+  const em = useEmail();
   const router = useRouter();
   const { speak } = useSpeaker();
   const [open, setOpen] = useState<Record<string, boolean>>({ personal: true });
@@ -331,6 +334,19 @@ export default function Settings() {
                 </div>
               </>
             ) : <Button onClick={async () => { try { await connectDrive(); } catch (e: any) { toast.error(e?.message || "Google Drive couldn't connect."); } }}><Cloud className="w-4 h-4" />Connect Google Drive</Button>}
+          </div>
+        </Section>
+
+        <Section id="gmail" icon={AtSign} title="Email (Gmail)" summary={em.allowSend || em.allowRead ? `${[em.allowSend && "Sending", em.allowRead && "Reading"].filter(Boolean).join(" and ")} allowed${em.address ? ` · ${em.address}` : ""}` : "Draft and send emails through Gmail"} open={!!open.gmail} onToggle={() => toggle("gmail")}>
+          <div className="mt-4">
+            <p className="text-sm text-muted">Sebastian drafts emails without Gmail access. Connect Gmail only if you&apos;d like Sebastian to send them or help with your inbox. Sending and reading are separate permissions, and Sebastian always shows you an email and asks you to confirm before sending it.</p>
+            {!gmailClientId() ? <Notice className="mt-3">Gmail isn&apos;t set up on this server yet (NEXT_PUBLIC_GOOGLE_CLIENT_ID).</Notice> : (<>
+              <Toggle label="Allow sending from my Gmail" desc="Used only when you press Send email in Sebastian's final check." on={em.allowSend}
+                set={async (v) => { if (v) { try { await grantGmail("send"); toast.success("Gmail sending allowed."); } catch (e: any) { toast.error(e?.message || "Permission wasn't granted."); } } else { forgetGmail("send"); patchEmail((x) => ({ ...x, allowSend: false })); } }} />
+              <Toggle label="Allow reading my Gmail" desc="For inbox summaries, reading emails aloud, drafting replies and checking for replies before follow-ups. Read-only: Sebastian can't delete or change your email." on={em.allowRead}
+                set={async (v) => { if (v) { try { await grantGmail("read"); toast.success("Gmail reading allowed."); } catch (e: any) { toast.error(e?.message || "Permission wasn't granted."); } } else { forgetGmail("read"); patchEmail((x) => ({ ...x, allowRead: false })); } }} />
+              <p className="text-[12px] text-muted mt-2">Turning these off stops Sebastian using Gmail straight away. To remove Sebastian&apos;s access completely, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline">myaccount.google.com/permissions</a>.</p>
+            </>)}
           </div>
         </Section>
 
