@@ -30,7 +30,7 @@ export function Globe({ pins, focus, selected, onPick }: { pins: Pin[]; focus?: 
 
   return (
     <div className="relative w-full h-full rounded-3xl overflow-hidden border border-line">
-      <GoogleMap className="absolute inset-0" pins={all} center={focus} zoom={11} selected={selected} onPick={(p) => onPick(p as Pin)}
+      <GoogleMap className="w-full h-full" pins={all} center={focus} zoom={11} selected={selected} onPick={(p) => onPick(p as Pin)}
         onReady={(m) => { map.current = m; m.addListener("zoom_changed", () => setWorld(m.getZoom() < 5)); }} />
       <div className="absolute top-3 left-3 right-3 sm:right-auto sm:w-80 z-10">
         <div className="flex items-center gap-1 bg-paper/95 backdrop-blur rounded-pill border border-line shadow-soft pl-4 pr-1 h-11">

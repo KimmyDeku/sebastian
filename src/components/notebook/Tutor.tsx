@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
-import { Plus, Send, Sparkles, TrendingUp, Target, Trash2, Loader2, ChevronLeft } from "lucide-react";
+import { Plus, Send, Sparkles, TrendingUp, Target, Trash2, Loader2, ChevronLeft, MessageSquarePlus } from "lucide-react";
+import { PastChats } from "./PastChats";
 import { Button } from "../ui/Button";
 import { Field, inputCls, textareaCls, Option } from "../ui/Chip";
 import { ConfirmDialog } from "../ui/Modal";
 import { EmptyState } from "../ui/States";
 import { Markdown } from "../Markdown";
 import { Quiz, type QuizQ } from "./Quiz";
-import { useNotebook, patchNotebook, newId, type TutorSubject } from "@/lib/notebook";
+import { useNotebook, patchNotebook, newId, archive, type TutorSubject } from "@/lib/notebook";
 import { api } from "@/lib/api";
 import { cx } from "@/lib/util";
 import { toast } from "../ui/Toast";
@@ -114,7 +115,9 @@ export function Tutor() {
       <section className="space-y-4 min-w-0">
         <div className="flex items-center justify-between gap-3">
           <button onClick={() => setOpenId(null)} className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-ink"><ChevronLeft className="w-4 h-4" />All subjects</button>
-          <div className="flex gap-2"><Button size="sm" onClick={quizMe} loading={busy === "quiz"}><Sparkles className="w-4 h-4" />Quiz me</Button><button onClick={() => setDel(cur)} aria-label="Delete subject" className="w-9 h-9 rounded-full hover:bg-cream inline-flex items-center justify-center text-muted"><Trash2 className="w-4 h-4" /></button></div>
+          <div className="flex gap-2">
+            {cur.chat.length > 0 && <Button size="sm" variant="outline" onClick={() => update(cur.id, (t) => ({ ...t, history: archive(t.chat, t.history), chat: [] }))}><MessageSquarePlus className="w-4 h-4" />New session</Button>}
+            <Button size="sm" onClick={quizMe} loading={busy === "quiz"}><Sparkles className="w-4 h-4" />Quiz me</Button><button onClick={() => setDel(cur)} aria-label="Delete subject" className="w-9 h-9 rounded-full hover:bg-cream inline-flex items-center justify-center text-muted"><Trash2 className="w-4 h-4" /></button></div>
         </div>
         <div><h2 className="font-serif text-2xl">{cur.subject}</h2><p className="text-[12.5px] text-muted">{cur.topics[0]} · {cur.level}</p></div>
 
@@ -132,6 +135,10 @@ export function Tutor() {
           </div>
         )}
 
+        <PastChats history={cur.history || []}
+          onOpen={(p) => update(cur.id, (t) => ({ ...t, chat: p.chat, history: archive(t.chat, (t.history || []).filter((x) => x.id !== p.id)) }))}
+          onDelete={(p) => update(cur.id, (t) => ({ ...t, history: (t.history || []).filter((x) => x.id !== p.id) }))} />
+        {!cur.chat.length && !quiz && <p className="text-sm text-muted">A clean session. Ask your tutor anything about {cur.subject}, or tap Quiz me.</p>}
         <div className="space-y-3">
           {cur.chat.map((m, i) => m.role === "user"
             ? <div key={i} className="flex justify-end"><div className="bg-ink text-white rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] max-w-[85%]">{m.content}</div></div>

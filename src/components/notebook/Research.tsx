@@ -1,13 +1,14 @@
 "use client";
 import { useRef, useState } from "react";
-import { Plus, FileText, Link2, Upload, Trash2, Send, BookMarked, ListChecks, HelpCircle, Layers, Sparkles, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, FileText, Link2, Upload, Trash2, Send, BookMarked, ListChecks, HelpCircle, Layers, Sparkles, ExternalLink, Loader2, MessageSquarePlus, Download } from "lucide-react";
+import { PastChats } from "./PastChats";
 import { Button } from "../ui/Button";
 import { Field, inputCls, textareaCls } from "../ui/Chip";
 import { Modal, ConfirmDialog } from "../ui/Modal";
 import { EmptyState, Notice } from "../ui/States";
 import { Markdown } from "../Markdown";
 import { Quiz, type QuizQ } from "./Quiz";
-import { useNotebook, patchNotebook, newId, type Notebook, type Source } from "@/lib/notebook";
+import { useNotebook, patchNotebook, newId, archive, type Notebook, type Source } from "@/lib/notebook";
 import { api } from "@/lib/api";
 import { cx } from "@/lib/util";
 import { toast } from "../ui/Toast";
@@ -53,6 +54,18 @@ function AddSource({ onAdd, onClose }: { onAdd: (s: Omit<Source, "id" | "addedAt
       </div>)}
     </Modal>
   );
+}
+
+/** Saves a notebook's sources as one Markdown file that can be added to NotebookLM as a source. */
+function exportForNotebookLM(n: Notebook) {
+  const md = [`# ${n.title}`, "", ...n.sources.flatMap((s, i) => [`## [${i + 1}] ${s.title}`, s.url ? `Source: ${s.url}` : "", "", s.text, ""])].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+  a.download = `${n.title.replace(/[^\w\- ]+/g, "").trim() || "notebook"}.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  window.open("https://notebooklm.google.com/", "_blank", "noopener");
+  toast.success("Saved. In NotebookLM, open or create a notebook, choose Add source, then Upload, and pick this file.");
 }
 
 export function Research() {
@@ -129,6 +142,8 @@ export function Research() {
             </div>
             {hasSources && (
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-line">
+                {cur.chat.length > 0 && <Button size="sm" variant="outline" onClick={() => update(cur.id, (n) => ({ ...n, history: archive(n.chat, n.history), chat: [] }))}><MessageSquarePlus className="w-4 h-4" />New conversation</Button>}
+                <Button size="sm" variant="outline" onClick={() => exportForNotebookLM(cur)}><Download className="w-4 h-4" />Send to NotebookLM</Button>
                 {([["summary", "Summary", BookMarked], ["study", "Study guide", ListChecks], ["faq", "FAQ", HelpCircle]] as const).map(([k, l, I]) => (
                   <Button key={k} size="sm" variant="outline" onClick={() => guide(k)} loading={busy === k}><I className="w-4 h-4" />{l}</Button>
                 ))}
@@ -154,6 +169,10 @@ export function Research() {
           )}
 
           {quiz && <div className="rounded-2xl bg-paper border border-line p-5"><Quiz questions={quiz} onDone={() => {}} onClose={() => setQuiz(null)} /></div>}
+
+          <PastChats history={cur.history || []}
+            onOpen={(p) => update(cur.id, (n) => ({ ...n, chat: p.chat, history: archive(n.chat, (n.history || []).filter((x) => x.id !== p.id)) }))}
+            onDelete={(p) => update(cur.id, (n) => ({ ...n, history: (n.history || []).filter((x) => x.id !== p.id) }))} />
 
           {cur.chat.length > 0 && (
             <div className="space-y-3">

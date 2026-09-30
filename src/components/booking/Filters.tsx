@@ -60,7 +60,7 @@ export function validate(type: BookingType, f: any): string | null {
   return null;
 }
 
-export function FilterBar({ type, f, set, onSearch, busy, onAutopilot }: { type: BookingType; f: any; set: (k: string, v: any) => void; onSearch: () => void; busy: boolean; onAutopilot: () => void }) {
+export function FilterBar({ type, f, set, onSearch, busy }: { type: BookingType; f: any; set: (k: string, v: any) => void; onSearch: () => void; busy: boolean; onAutopilot?: () => void }) {
   const [occ, setOcc] = useState(false);
   const t = today();
   const submit = (e: React.FormEvent) => { e.preventDefault(); onSearch(); };
@@ -122,9 +122,6 @@ export function FilterBar({ type, f, set, onSearch, busy, onAutopilot }: { type:
           </Box>
         </>}
         <div className="flex gap-1">
-          <button type="button" onClick={onAutopilot} className="flex-1 lg:flex-none min-h-[48px] px-4 rounded-xl bg-paper border border-line inline-flex items-center justify-center gap-2 text-[13px] text-ink hover:bg-cream/60" title="Let Sebastian fill this in by voice">
-            <Sparkles className="w-4 h-4 text-gold" aria-hidden />Autopilot
-          </button>
           <button type="submit" disabled={busy} className="flex-1 lg:flex-none min-h-[48px] px-5 rounded-xl bg-ink text-white inline-flex items-center justify-center gap-2 text-sm disabled:opacity-60">
             <Search className="w-4 h-4" aria-hidden />{busy ? "Searching…" : "Search"}
           </button>

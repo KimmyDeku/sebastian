@@ -296,7 +296,7 @@ export default function Settings() {
             const where = month.reduce((acc: Record<string, number>, x) => ({ ...acc, [x.where]: (acc[x.where] || 0) + 1 }), {});
             return (
               <div className="mt-4 space-y-4">
-                <p className="text-sm text-muted">Coding requests (in Notebook and in chat) run on OpenAI. This tracks what they use this month.</p>
+                <p className="text-sm text-muted">Coding requests, in Notebook and in chat, run on {month.at(-1)?.provider || "Groq"}. This tracks what they use this month.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[["Requests", month.length.toLocaleString()], ["Input tokens", input.toLocaleString()], ["Output tokens", output.toLocaleString()], ["Estimated cost", costKnown ? `$${cost.toFixed(cost < 1 ? 4 : 2)}` : "Not set"]].map(([k, v]) => (
                     <div key={k} className="rounded-2xl bg-canvas border border-line p-3"><p className="text-[11.5px] text-muted">{k}</p><p className="font-serif text-xl mt-0.5">{v}</p></div>
@@ -309,7 +309,7 @@ export default function Settings() {
                   </div>
                 </div>
                 {month.length > 0 && <p className="text-[12.5px] text-muted">Model{models.length > 1 ? "s" : ""}: {models.join(", ")} · {Object.entries(where).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
-                {!costKnown && <p className="text-[12px] text-muted">To see costs, add your model&apos;s prices per million tokens to the server settings (OPENAI_INPUT_PRICE_PER_1M and OPENAI_OUTPUT_PRICE_PER_1M). Your official bill is on platform.openai.com under Usage.</p>}
+                {!costKnown && <p className="text-[12px] text-muted">To see costs, add your model&apos;s prices per million tokens to the server settings (CODE_INPUT_PRICE_PER_1M and CODE_OUTPUT_PRICE_PER_1M). Your official usage is in your provider&apos;s console, such as console.groq.com.</p>}
                 {nb.codingUsage.length > 0 && <Button size="sm" variant="ghost" onClick={() => { patchNotebook((n) => ({ ...n, codingUsage: [] })); toast.info("Usage history cleared."); }}>Clear usage history</Button>}
               </div>
             );

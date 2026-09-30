@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { BedDouble, Plane, Car, Ticket, CarTaxiFront, Bus } from "lucide-react";
+import { BedDouble, Plane, Car, Ticket, CarTaxiFront, Bus, Sparkles } from "lucide-react";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { FilterBar, validate, type BookingType } from "@/components/booking/Filters";
 import { Autopilot } from "@/components/booking/Autopilot";
@@ -105,6 +105,15 @@ function BookingInner() {
       </Container>
     );
 
+  const autopilotButton = (
+    <div className="flex justify-end mb-3">
+      <button type="button" onClick={() => setAutopilot(true)} title="Let Sebastian fill in the search by voice"
+        className="glow-gold inline-flex items-center gap-2 h-10 px-5 rounded-pill bg-paper border border-gold/60 text-[13px] text-ink hover:bg-gold-soft/40 transition-colors">
+        <Sparkles className="w-4 h-4 text-gold" aria-hidden />Autopilot<span className="hidden sm:inline text-muted">· fill this in by voice</span>
+      </button>
+    </div>
+  );
+
   const tabs = (
     <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 -mx-5 px-5 md:mx-0 md:px-0" role="tablist">
       {TYPES.map((t) => (
@@ -122,8 +131,9 @@ function BookingInner() {
         subtitle="Fill it in yourself, or let Autopilot ask you by voice. A booking assistant with three decades of experience does the rest." onBack={() => choose(null)} />}
       {view !== "details" && (
         <>
+          {autopilotButton}
           {tabs}
-          <FilterBar type={type} f={f} set={set} onSearch={search} busy={busy} onAutopilot={() => setAutopilot(true)} />
+          <FilterBar type={type} f={f} set={set} onSearch={search} busy={busy} />
           {err && !busy && <div className="mt-4"><Notice tone="warning">{err}</Notice></div>}
         </>
       )}

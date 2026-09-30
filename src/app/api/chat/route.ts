@@ -1,5 +1,5 @@
 import { SEBASTIAN_CORE, claude, errorResponse, extractJSON } from "@/lib/server/ai";
-import { openaiCode, openaiReady } from "@/lib/server/openai";
+import { codeComplete, codeReady } from "@/lib/server/code";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -53,10 +53,10 @@ export async function POST(req: Request) {
     }
 
     if (isCoding(messages || [])) {
-      // With an OpenAI key, coding questions go to OpenAI and their usage is recorded in Settings.
-      if (openaiReady() && !att) {
+      // Coding questions go to the coding AI (Groq by default) and their usage is recorded in Settings.
+      if (codeReady() && !att) {
         try {
-          const r = await openaiCode(CODER, trimmed, "Chat");
+          const r = await codeComplete(CODER, trimmed, "Chat");
           return Response.json({ ok: true, reply: r.reply.trim(), route: null, params: {}, mode: "code", codingUsage: r.codingUsage });
         } catch { /* fall back to Groq below */ }
       }
