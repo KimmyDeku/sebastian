@@ -12,6 +12,7 @@ import { useNotebook, patchNotebook } from "@/lib/notebook";
 import { Gauge, Cloud, AtSign } from "lucide-react";
 import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
+import { clearActivity, useActivity } from "@/lib/activity";
 import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
 import { clientId as driveClientId } from "@/lib/drive";
 import { Container, PageHeader } from "@/components/ui/Page";
@@ -85,6 +86,7 @@ export default function Settings() {
   const d = useData();
   const nb = useNotebook();
   const em = useEmail();
+  const activity = useActivity();
   const router = useRouter();
   const { speak } = useSpeaker();
   const [open, setOpen] = useState<Record<string, boolean>>({ personal: true });
@@ -399,6 +401,13 @@ export default function Settings() {
           <div className="mt-4 space-y-3 text-sm text-muted leading-relaxed">
             <p>Your account and conversations are stored securely so you can use Sebastian on any device. Your messages are processed by our AI provider to generate replies and are not used to train AI models. Sebastian never books, pays or shares your data for advertising, and reminders never reveal their contents in notifications.</p>
             <Link href="/privacy" className="inline-flex items-center gap-1.5 text-ink underline underline-offset-4">Read the full privacy policy<ExternalLink className="w-3.5 h-3.5" /></Link>
+          </div>
+          <div className="mt-5 border-t border-line pt-2">
+            <Toggle label="Keep my activity history" desc="Sebastian keeps a private list of what you do (stories opened, recipes, trips, bookings, drafted emails and so on) under History, so you can find things again. It's stored only with your account." on={d.prefs.activityHistory !== false} set={(v) => actions.setPrefs({ activityHistory: v })} />
+            <div className="flex flex-wrap gap-2 pb-2">
+              <Button size="sm" variant="outline" href="/history">View history</Button>
+              <Button size="sm" variant="ghost" disabled={!activity.length} onClick={() => { clearActivity(); toast.info("Activity history cleared."); }}>Clear activity history ({activity.length})</Button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 mt-5">
             <Button variant="outline" onClick={exportData}><Download className="w-4 h-4" />Export my data</Button>

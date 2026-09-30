@@ -1,5 +1,6 @@
 import { getLang } from "./i18n";
 import { recordCodingUsage } from "./notebook";
+import { logFromApi } from "./activity";
 
 export type ApiResult<T> = { ok: boolean; code?: string; error?: string; offline?: boolean } & T;
 
@@ -11,6 +12,7 @@ export async function api<T = any>(url: string, body?: any, method = body ? "POS
     const r = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
     const j = await r.json().catch(() => ({ ok: false, error: `The service returned an unreadable response (${r.status}).` }));
     if (j?.codingUsage) { try { recordCodingUsage(j.codingUsage); } catch {} }
+    try { logFromApi(url, body, j); } catch {}
     return j;
   } catch (e: any) {
     return { ok: false, code: "network", error: "The request could not reach Sebastian's server. Check your connection and try again." } as ApiResult<T>;

@@ -18,7 +18,7 @@ export const googleClientId = () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
 /* ---------- Saved email data (with the user's account) ---------- */
 export type FollowUp = { id: string; to: string; toName?: string; subject: string; threadId?: string; sentAt: string; due: string; status: "waiting" | "replied" | "dismissed"; eventId?: string };
 export type SentItem = { id: string; threadId?: string; to: string; cc?: string; subject: string; at: string };
-export type EmailData = { allowSend: boolean; allowRead: boolean; address?: string; followUps: FollowUp[]; sent: SentItem[] };
+export type EmailData = { allowSend: boolean; allowRead: boolean; address?: string; followUps: FollowUp[]; sent: SentItem[]; replied?: string[] };
 const EMPTY: EmailData = { allowSend: false, allowRead: false, followUps: [], sent: [] };
 const filled = new WeakMap<object, EmailData>();
 export function useEmail(): EmailData {

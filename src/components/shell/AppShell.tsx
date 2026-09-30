@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { Menu, PanelLeftClose } from "lucide-react";
 import { useUI } from "@/lib/ui";
+import { recordLinkOpens, recordSaves } from "@/lib/activity";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { Sidebar } from "./Sidebar";
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { sidebar, setSidebar, init, ready } = useUI();
   useEffect(() => { if (!ready) init(); }, [ready, init]);
+  useEffect(() => { recordSaves(); recordLinkOpens(); }, []);
 
   useEffect(() => {
     if (hydrated && !session) router.replace(`/login?next=${encodeURIComponent(path)}`);

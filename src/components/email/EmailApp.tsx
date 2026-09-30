@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PenLine, Paperclip, UsersRound, Trash2, Send, CheckCircle2, AlertTriangle, Loader2, Inbox, Mail, Volume2, Reply, BellRing, X, ShieldAlert, RefreshCw, Sparkles, FileText } from "lucide-react";
+import { PenLine, Paperclip, UsersRound, Trash2, Send, CheckCircle2, AlertTriangle, Loader2, Inbox, Mail, Volume2, Reply, BellRing, X, ShieldAlert, RefreshCw, Sparkles, FileText, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { logActivity } from "@/lib/activity";
 import { Button } from "../ui/Button";
 import { Field, inputCls, textareaCls, Option } from "../ui/Chip";
 import { Modal } from "../ui/Modal";
@@ -92,6 +93,12 @@ export function EmailApp({ initial }: { initial?: string }) {
       patchEmail((e) => ({ ...e, sent: [{ id: r.id, threadId: r.threadId, to: draft.to, cc: draft.cc, subject: draft.subject, at: at.toISOString() }, ...e.sent].slice(0, 50) }));
       setSentInfo({ at, to: draft.to, subject: draft.subject, threadId: r.threadId });
       setStage("sent");
+      logActivity({ kind: "email", title: `Email sent: ${draft.subject}`, detail: `To ${draft.to}`, href: "/email" });
+      // A reply takes that email out of the inbox feed.
+      if (draft.threadId) {
+        const done = (inbox?.mails || []).filter((m) => m.threadId === draft.threadId).map((m) => m.id);
+        if (done.length) patchEmail((e) => ({ ...e, replied: Array.from(new Set([...(e.replied || []), ...done])).slice(-300) }));
+      }
     } catch (e: any) {
       setErr(e?.message || "Gmail returned an error.");
       setStage("failed");
@@ -114,6 +121,12 @@ export function EmailApp({ initial }: { initial?: string }) {
   const [openSummary, setOpenSummary] = useState<any>(null);
   const [longChoice, setLongChoice] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [idx, setIdx] = useState(0);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const feed = (inbox?.mails || []).filter((m) => !(em.replied || []).includes(m.id));
+  useEffect(() => { if (idx > 0 && idx >= feed.length) setIdx(Math.max(0, feed.length - 1)); }, [feed.length, idx]);
+  const go = (n: number) => setIdx((i) => Math.min(Math.max(0, i + n), Math.max(0, feed.length - 1)));
+  const needsReply = (m: any) => !!m.attention || /reply|decision|confirm|respond/i.test(m.action || "");
 
   const needRead = (then: () => void) => { if (!em.allowRead) { setPerm("read"); return; } then(); };
   const loadInbox = (view: string) => needRead(async () => {
@@ -127,6 +140,7 @@ export function EmailApp({ initial }: { initial?: string }) {
         if (t.ok) { overview = t.overview; enriched = mails.map((m) => ({ ...m, ...(t.items || []).find((i: any) => i.id === m.id) })); if (view === "important") enriched.sort((a, b) => Number(!!b.attention) - Number(!!a.attention)); }
       }
       setInbox({ view, overview, mails: enriched });
+      setIdx(0);
     } catch (e: any) { toast.error(e?.message || "Gmail couldn't be read."); }
     setInboxBusy(false);
   });
@@ -145,11 +159,14 @@ export function EmailApp({ initial }: { initial?: string }) {
     const s = openSummary || (await summarize());
     if (s?.summary) speak(`Here's a summary, not the full email. From ${open.from}: ${s.summary}`, d.prefs.voiceName);
   };
-  const draftReply = () => {
-    if (!open) return;
+  const replyTo = (id: string) => needRead(async () => {
+    try { const full = await readEmail(id); setOpen(full); startReply(full); } catch (e: any) { toast.error(e?.message || "That email couldn't be opened."); }
+  });
+  const draftReply = () => { if (open) startReply(open); };
+  const startReply = (open: any) => {
     const re = /^re:/i.test(open.subject) ? open.subject : `Re: ${open.subject}`;
     setDraft({ to: open.fromEmail, toName: open.from, cc: "", bcc: "", subject: re, body: "", attachments: [], threadId: open.threadId, inReplyTo: open.messageId, missing: [] });
-    writeDraft("reply", { original: { from: open.from, subject: open.subject, body: open.body }, instruction: replyText || "a courteous reply", to: open.fromEmail, threadId: open.threadId, inReplyTo: open.messageId });
+    writeDraft("reply", { original: { from: open.from, subject: open.subject, body: open.body }, instruction: replyText || "a courteous reply that responds to what they asked", to: open.fromEmail, threadId: open.threadId, inReplyTo: open.messageId });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -284,16 +301,41 @@ export function EmailApp({ initial }: { initial?: string }) {
           {inbox && !inboxBusy && (
             <div className="mt-4">
               {inbox.overview && <p className="text-[13.5px] mb-3">{inbox.overview}</p>}
-              <ul className="space-y-2">{inbox.mails.map((m) => (
-                <li key={m.id}><button onClick={() => openMail(m.id)} className={cx("w-full text-left rounded-2xl border p-3 hover:border-cream-line", m.attention ? "border-gold/50 bg-gold-soft/20" : "border-line")}>
-                  <span className="flex items-center justify-between gap-2 text-[12px] text-muted"><span className={cx("truncate", m.unread && "text-ink font-medium")}>{m.from}</span><span className="shrink-0">{m.date ? relTime(m.date) : ""}</span></span>
-                  <span className="block text-[13.5px] font-medium mt-0.5 truncate">{m.subject}</span>
-                  <span className="block text-[12.5px] text-muted mt-0.5 line-clamp-2">{m.summary || m.snippet}</span>
-                  {(m.action || m.category) && <span className="flex flex-wrap gap-1.5 mt-1.5">{m.category && <span className="text-[10.5px] bg-cream rounded-full px-2 py-0.5">{m.category}</span>}{m.action && <span className={cx("text-[10.5px] rounded-full px-2 py-0.5", /reply|decision|due/i.test(m.action) ? "bg-ink text-white" : "bg-canvas border border-line")}>{m.action}</span>}</span>}
-                </button></li>))}</ul>
+              {!feed.length ? <p className="text-[13px] text-muted">{inbox.mails.length ? "You've replied to everything here." : ""}</p> : (() => { const m: any = feed[idx]; return (
+                <div>
+                  <div role="group" aria-roledescription="carousel" aria-label="Emails" tabIndex={0} data-no-drag
+                    onKeyDown={(e) => { if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); }}
+                    onPointerDown={(e) => { swipe.current = { x: e.clientX, y: e.clientY }; }}
+                    onPointerUp={(e) => { const s0 = swipe.current; swipe.current = null; if (!s0) return; const dx = e.clientX - s0.x, dy = e.clientY - s0.y; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(1); }}
+                    className="touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/40 rounded-2xl">
+                    <article key={m.id} aria-label={`Email ${idx + 1} of ${feed.length}`} className={cx("rounded-2xl border p-4 min-h-[170px] animate-fadeUp", m.attention ? "border-gold/50 bg-gold-soft/20" : "border-line bg-paper")}>
+                      <p className="flex items-center justify-between gap-2 text-[12px] text-muted"><span className={cx("truncate", m.unread && "text-ink font-medium")}>{m.from}</span><span className="shrink-0">{m.date ? relTime(m.date) : ""}</span></p>
+                      <h3 className="text-[15px] font-medium mt-1">{m.subject}</h3>
+                      <p className="text-[13px] text-muted mt-1.5 line-clamp-3">{m.summary || m.snippet}</p>
+                      {(m.action || m.category) && <p className="flex flex-wrap gap-1.5 mt-2">{m.category && <span className="text-[10.5px] bg-cream rounded-full px-2 py-0.5">{m.category}</span>}{m.action && <span className={cx("text-[10.5px] rounded-full px-2 py-0.5", needsReply(m) ? "bg-ink text-white" : "bg-canvas border border-line")}>{m.action}</span>}</p>}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {needsReply(m) && <Button size="sm" onClick={() => replyTo(m.id)}><Reply className="w-4 h-4" />Reply</Button>}
+                        <Button size="sm" variant="outline" onClick={() => openMail(m.id)}><Eye className="w-4 h-4" />Open</Button>
+                      </div>
+                    </article>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <Button size="sm" variant="ghost" onClick={() => go(-1)} disabled={idx === 0} aria-label="Previous email"><ChevronLeft className="w-4 h-4" />Previous</Button>
+                    <span className="flex items-center gap-1.5" aria-live="polite">
+                      {feed.length <= 10 ? feed.map((x, k) => <button key={x.id} onClick={() => setIdx(k)} aria-label={`Show email ${k + 1}`} className={cx("rounded-full transition-all", k === idx ? "w-5 h-2 bg-gold" : "w-2 h-2 bg-line hover:bg-cream-line")} />) : <span className="text-[12px] text-muted">{idx + 1} of {feed.length}</span>}
+                    </span>
+                    <Button size="sm" variant="ghost" onClick={() => go(1)} disabled={idx >= feed.length - 1} aria-label="Next email">Next<ChevronRight className="w-4 h-4" /></Button>
+                  </div>
+                  <p className="text-[11.5px] text-muted text-center mt-1">Swipe or use Next to see more</p>
+                </div>); })()}
             </div>
           )}
         </div>
+
+        {!open && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/images/email-illustration.jpg" alt="Read, draft and send: Sebastian helps with every step of your email" className="w-full rounded-3xl border border-line bg-[#FCFBF9]" loading="lazy" />
+        )}
 
         {open && (
           <div className="rounded-3xl bg-paper border border-line p-5 space-y-3">

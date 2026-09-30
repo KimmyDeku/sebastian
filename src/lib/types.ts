@@ -24,6 +24,7 @@ export interface Prefs {
   alarmSound?: boolean;   // play a chime when a reminder is due (default on)
   voiceAlerts?: boolean;  // Sebastian says "Pardon me…" when a reminder is due (default on)
   plan?: "silver" | "gold" | "diamond"; // default silver
+  activityHistory?: boolean; // keep a private history of activity (default on)
 }
 
 export interface ChatAction { label: string; href: string }
