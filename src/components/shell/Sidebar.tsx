@@ -29,7 +29,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       <Link href="/" onClick={onNavigate} className="px-2 pt-1" aria-label="Sebastian home"><Wordmark /></Link>
-      <button onClick={() => { onNavigate?.(); router.push("/chat?new=1"); }} className="mt-7 h-12 w-full rounded-2xl bg-ink text-white inline-flex items-center justify-center gap-2 text-[15px] hover:bg-ink-soft shadow-soft">
+            <button onClick={() => { onNavigate?.(); router.push("/chat?new=1"); }} className="mt-6 h-12 w-full px-5 py-3 rounded-2xl bg-ink text-white inline-flex items-center justify-center gap-2 text-[15px] font-medium hover:bg-ink-soft shadow-soft">
         <Plus className="w-5 h-5" aria-hidden /> New chat
       </button>
 
