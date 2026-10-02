@@ -21,6 +21,7 @@ import { BirthdayCelebration } from "./BirthdayCelebration";
 import { CloudSync } from "./CloudSync";
 import { CompanionBridge } from "../CompanionBridge";
 import { Onboarding } from "../Onboarding";
+import { TrialGate } from "../TrialGate";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
 
@@ -100,6 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CloudSync />
       <CompanionBridge />
       <Onboarding />
+      <TrialGate />
       <VoiceLauncher />
       <VoiceAgent />
       <OfflineWatcher />

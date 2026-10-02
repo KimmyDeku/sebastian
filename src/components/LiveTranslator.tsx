@@ -1,11 +1,15 @@
 "use client";
 import "@/lib/polyfills";
+import { installAuthFetch } from "@/lib/authFetch";
 import { useEffect, useState } from "react";
 import { Languages } from "lucide-react";
 import { applyLanguage, onTranslateBusy, onTranslateError, startTranslator } from "@/lib/translator";
 import { toast } from "./ui/Toast";
 
 /** Mounted once in the root layout. Translates every screen into the chosen language. */
+// Sign every request to Sebastian's server as early as possible.
+if (typeof window !== "undefined") installAuthFetch();
+
 export function LiveTranslator() {
   const [busy, setBusy] = useState(false);
   useEffect(() => {
