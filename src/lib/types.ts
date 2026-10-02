@@ -59,6 +59,8 @@ export interface ScheduleEvent {
   notes?: string;
   source: { type: "manual" | "booking" | "trip"; ref?: string; provider?: string };
   gcalOpened?: boolean;
+  gcalId?: string; // the matching Google Calendar event, when synced
+  location?: string;
   notified?: boolean;
   seen?: boolean; // dismissed from the pending-reminders note
   createdAt: string;

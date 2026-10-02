@@ -10,7 +10,9 @@ import { uid } from "./util";
 export const SCOPES = {
   send: "https://www.googleapis.com/auth/gmail.send openid email",
   read: "https://www.googleapis.com/auth/gmail.readonly openid email",
+  calendar: "https://www.googleapis.com/auth/calendar.events openid email",
 } as const;
+const SCOPE_MARK: Record<string, string> = { send: "gmail.send", read: "gmail.readonly", calendar: "calendar.events" };
 type Kind = keyof typeof SCOPES;
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 export const googleClientId = () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -18,7 +20,7 @@ export const googleClientId = () => process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
 /* ---------- Saved email data (with the user's account) ---------- */
 export type FollowUp = { id: string; to: string; toName?: string; subject: string; threadId?: string; sentAt: string; due: string; status: "waiting" | "replied" | "dismissed"; eventId?: string };
 export type SentItem = { id: string; threadId?: string; to: string; cc?: string; subject: string; at: string };
-export type EmailData = { allowSend: boolean; allowRead: boolean; address?: string; followUps: FollowUp[]; sent: SentItem[]; replied?: string[] };
+export type EmailData = { allowSend: boolean; allowRead: boolean; allowCalendar?: boolean; address?: string; followUps: FollowUp[]; sent: SentItem[]; replied?: string[] };
 const EMPTY: EmailData = { allowSend: false, allowRead: false, followUps: [], sent: [] };
 const filled = new WeakMap<object, EmailData>();
 export function useEmail(): EmailData {
@@ -69,7 +71,7 @@ export async function gmailToken(kind: Kind, consent = false): Promise<string> {
       client_id: googleClientId(), scope: SCOPES[kind], include_granted_scopes: false,
       callback: (r: any) => {
         if (r.error || !r.access_token) { reject(new Error(r.error_description || "Google permission wasn't granted.")); return; }
-        if (!String(r.scope || "").includes(kind === "send" ? "gmail.send" : "gmail.readonly")) { reject(new Error("Gmail permission wasn't ticked on Google's screen. Please try again and allow it.")); return; }
+        if (!String(r.scope || "").includes(SCOPE_MARK[kind])) { reject(new Error(`The ${kind === "calendar" ? "Google Calendar" : "Gmail"} permission wasn't ticked on Google's screen. Please try again and allow it.`)); return; }
         const tok = { value: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000 };
         tokens[kind] = tok;
         try { sessionStorage.setItem(`sebastian-gmail-${kind}`, JSON.stringify(tok)); } catch {}
@@ -88,7 +90,7 @@ export async function googleEmail(token: string) {
   return r.ok ? ((await r.json()).email as string) : undefined;
 }
 
-async function gcall(kind: Kind, path: string, init: RequestInit = {}) {
+export async function gcall(kind: Kind, path: string, init: RequestInit = {}) {
   const token = await gmailToken(kind);
   const r = await fetch(`${API}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
   if (r.status === 401) { forgetGmail(kind); throw new Error("Gmail needs you to sign in again."); }

@@ -2,11 +2,12 @@
 import { useEffect, useRef } from "react";
 import { useStore, actions, useAccount } from "@/lib/store";
 import { toast } from "../ui/Toast";
-import { formOfAddress } from "@/lib/address";
 import { useSpeaker } from "@/lib/voice";
 import { playChime, primeAudio } from "@/lib/sound";
 import { ensureServiceWorker, pushNotify } from "@/lib/notify";
 import { translateText } from "@/lib/translator";
+import { alertPhrase } from "@/lib/alertPhrase";
+import { pushEndpoint } from "@/lib/push";
 
 /**
  * Checks the schedule and alerts before events: a chime, a notification and a spoken
@@ -35,10 +36,10 @@ export function ReminderEngine() {
       if (!due.length) return;
       due.forEach((e) => actions.updateEvent(e.id, { notified: true, seen: false }));
 
-      const who = formOfAddress(acc, d.prefs) || acc?.firstName || "";
-      const line = `Pardon me${who ? `, ${who}` : ""}, you have a notification.`;
+      const line = alertPhrase(acc, d.prefs.useTitle);
       toast.info(`${line} It's on your pending reminders note.`);
-      pushNotify("Sebastian", `${line} Open Sebastian to view it.`, { tag: "sebastian-reminder", url: "/schedule" });
+      // With push switched on, the server sends the notification; otherwise show one from here.
+      if (!pushEndpoint()) pushNotify("Sebastian", line, { tag: "sebastian-reminder", url: "/schedule" });
 
       let wait = 0;
       if (d.prefs.alarmSound !== false) wait = playChime();

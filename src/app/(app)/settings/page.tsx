@@ -17,6 +17,10 @@ import { clearUsage } from "@/lib/usage";
 import { ActivityPanel } from "@/components/ActivityPanel";
 import { Activity as ActivityIcon } from "lucide-react";
 import { useMemory, refreshMemory, addPinned, forgetFact, forgetAll } from "@/lib/memory";
+import { alertPhrase } from "@/lib/alertPhrase";
+import { enablePush, disablePush, testPush, pushEndpoint, pushKey, pushSupported } from "@/lib/push";
+import { useCompanion, patchCompanion, openUnfinished } from "@/lib/companion";
+import { Puzzle, BellRing as BellRing2 } from "lucide-react";
 import { Brain, X as XIcon, Pin } from "lucide-react";
 import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
 import { clientId as driveClientId } from "@/lib/drive";
@@ -96,6 +100,10 @@ export default function Settings() {
   const [newFact, setNewFact] = useState("");
   const [learningNow, setLearningNow] = useState(false);
   const [forgetAsk, setForgetAsk] = useState(false);
+  const comp = useCompanion();
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  useEffect(() => { setPushOn(!!pushEndpoint()); }, []);
   const router = useRouter();
   const { speak } = useSpeaker();
   const [open, setOpen] = useState<Record<string, boolean>>({ personal: true });
@@ -349,7 +357,7 @@ export default function Settings() {
           </div>
         </Section>
 
-        <Section id="gmail" icon={AtSign} title="Email (Gmail)" summary={em.allowSend || em.allowRead ? `${[em.allowSend && "Sending", em.allowRead && "Reading"].filter(Boolean).join(" and ")} allowed${em.address ? ` · ${em.address}` : ""}` : "Draft and send emails through Gmail"} open={!!open.gmail} onToggle={() => toggle("gmail")}>
+        <Section id="gmail" icon={AtSign} title="Google (Gmail and Calendar)" summary={em.allowSend || em.allowRead ? `${[em.allowSend && "Sending", em.allowRead && "Reading"].filter(Boolean).join(" and ")} allowed${em.address ? ` · ${em.address}` : ""}` : "Draft and send emails through Gmail"} open={!!open.gmail} onToggle={() => toggle("gmail")}>
           <div className="mt-4">
             <p className="text-sm text-muted">Sebastian drafts emails without Gmail access. Connect Gmail only if you&apos;d like Sebastian to send them or help with your inbox. Sending and reading are separate permissions, and Sebastian always shows you an email and asks you to confirm before sending it.</p>
             {!gmailClientId() ? <Notice className="mt-3">Gmail isn&apos;t set up on this server yet (NEXT_PUBLIC_GOOGLE_CLIENT_ID).</Notice> : (<>
@@ -357,6 +365,8 @@ export default function Settings() {
                 set={async (v) => { if (v) { try { await grantGmail("send"); toast.success("Gmail sending allowed."); } catch (e: any) { toast.error(e?.message || "Permission wasn't granted."); } } else { forgetGmail("send"); patchEmail((x) => ({ ...x, allowSend: false })); } }} />
               <Toggle label="Allow reading my Gmail" desc="For inbox summaries, reading emails aloud, drafting replies and checking for replies before follow-ups. Read-only: Sebastian can't delete or change your email." on={em.allowRead}
                 set={async (v) => { if (v) { try { await grantGmail("read"); toast.success("Gmail reading allowed."); } catch (e: any) { toast.error(e?.message || "Permission wasn't granted."); } } else { forgetGmail("read"); patchEmail((x) => ({ ...x, allowRead: false })); } }} />
+              <Toggle label="Add my schedule to Google Calendar" desc="Entries you save with Schedule my week or month are added to your Google Calendar, with a pop-up reminder and an email reminder to your Gmail." on={!!em.allowCalendar}
+                set={async (v) => { if (v) { try { await grantGmail("calendar"); toast.success("Google Calendar connected."); } catch (e: any) { toast.error(e?.message || "Permission wasn't granted."); } } else { forgetGmail("calendar" as any); patchEmail((x) => ({ ...x, allowCalendar: false })); } }} />
               <p className="text-[12px] text-muted mt-2">Turning these off stops Sebastian using Gmail straight away. To remove Sebastian&apos;s access completely, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline">myaccount.google.com/permissions</a>.</p>
             </>)}
           </div>
@@ -370,6 +380,26 @@ export default function Settings() {
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" href="/history?tab=activity">Open full activity</Button>
               <Button size="sm" variant="ghost" disabled={!activity.length} onClick={() => { clearActivity(); clearUsage(); toast.info("Activity cleared."); }}>Clear activity</Button>
+            </div>
+          </div>
+        </Section>
+
+        <Section id="connections" icon={Puzzle} title="Connections" summary={comp.allowed ? `Browser extension connected${openUnfinished(comp).length ? ` · ${openUnfinished(comp).length} unfinished` : ""}` : "Browser extension and other apps"} open={!!open.connections} onToggle={() => toggle("connections")}>
+          <div className="mt-4 space-y-4">
+            <div className="rounded-2xl border border-line p-4">
+              <p className="text-sm font-medium inline-flex items-center gap-2"><Puzzle className="w-4 h-4 text-gold" />Sebastian Companion (Chrome and Edge)</p>
+              <p className="text-[13px] text-muted mt-1">Save pages and tasks you haven&apos;t finished, and optionally the tabs you leave open. Sebastian reminds you about them when you log in. Everything goes straight from your browser to your account.</p>
+              <p className="text-[12.5px] mt-2">{comp.lastSeen ? <>Last seen {new Date(comp.lastSeen).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}{comp.version ? ` · version ${comp.version}` : ""}</> : <span className="text-muted">Not detected in this browser yet. Install it from the browser-extension folder (see its README), then reload Sebastian.</span>}</p>
+              <Toggle label="Allow Sebastian Companion" desc="When off, Sebastian ignores the extension." on={comp.allowed === true} set={(v) => patchCompanion((x) => ({ ...x, allowed: v, ...(v ? {} : { openTabs: [] }) }))} />
+              {comp.items.length > 0 && <Button size="sm" variant="ghost" onClick={() => patchCompanion((x) => ({ ...x, items: [], openTabs: [] }))}>Clear saved items ({comp.items.length})</Button>}
+            </div>
+            <div className="rounded-2xl border border-dashed border-line p-4 text-[13px] text-muted">
+              <p className="font-medium text-ink">ChatGPT</p>
+              <p className="mt-1">OpenAI doesn&apos;t let other apps read your ChatGPT conversations, so this can&apos;t be connected. You can paste anything useful into a Sebastian chat or Notebook.</p>
+            </div>
+            <div className="rounded-2xl border border-dashed border-line p-4 text-[13px] text-muted">
+              <p className="font-medium text-ink">Fitness apps</p>
+              <p className="mt-1">Google Fit is being shut down, and its replacement, Health Connect, only works inside Android apps. A Fitbit connection is possible in a future update.</p>
             </div>
           </div>
         </Section>
@@ -437,14 +467,20 @@ export default function Settings() {
               <Button size="sm" variant="ghost" onClick={() => playChime()} disabled={!d.prefs.notifications}>Test</Button>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <div className="flex-1"><Toggle label="Spoken alert" desc={`Sebastian says “Pardon me, ${who}, you have a notification.” He never reads out what it's about.`} on={d.prefs.voiceAlerts !== false} set={(v) => actions.setPrefs({ voiceAlerts: v })} disabled={!d.prefs.notifications} /></div>
-              <Button size="sm" variant="ghost" onClick={() => speak(`Pardon me, ${who}, you have a notification.`, d.prefs.voiceName)} disabled={!d.prefs.notifications}>Test</Button>
+              <div className="flex-1"><Toggle label="Spoken alert" desc={`Sebastian says “${alertPhrase(acc, d.prefs.useTitle)}” He never reads out what it's about.`} on={d.prefs.voiceAlerts !== false} set={(v) => actions.setPrefs({ voiceAlerts: v })} disabled={!d.prefs.notifications} /></div>
+              <Button size="sm" variant="ghost" onClick={() => speak(alertPhrase(acc, d.prefs.useTitle), d.prefs.voiceName)} disabled={!d.prefs.notifications}>Test</Button>
             </div>
             <div className="py-3">
               {perm === "granted" && <p className="text-xs text-success inline-flex items-center gap-1.5"><Check className="w-3.5 h-3.5" />Notifications are allowed on this device.</p>}
               {perm === "default" && <Button size="sm" variant="outline" onClick={requestPerm} disabled={!d.prefs.notifications}><Bell className="w-4 h-4" />Allow notifications on this device</Button>}
               {perm === "denied" && <p className="text-xs text-muted">Notifications are blocked in this browser. Allow them in your browser&apos;s site settings to be alerted when Sebastian isn&apos;t on screen.</p>}
               {perm === "unsupported" && <p className="text-xs text-muted">This browser can&apos;t show notifications here. On a phone, open Sebastian from a secure (https) address.</p>}
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1"><Toggle label="Push notifications, even when Sebastian is closed" desc={!pushKey() ? "Not set up on this server yet." : !pushSupported() ? "This browser can't receive push notifications. On an iPhone, add Sebastian to your home screen first, then switch this on from there." : "Reminders reach this device even when the app is closed. The notification only says you have something that needs your attention; tap it and Sebastian says it aloud."}
+                on={pushOn} disabled={!d.prefs.notifications || !pushKey() || !pushSupported() || pushBusy}
+                set={async (v) => { setPushBusy(true); try { if (v) { await enablePush(alertPhrase(acc, d.prefs.useTitle)); setPushOn(true); setPerm("granted"); toast.success("Push notifications are on for this device."); } else { await disablePush(); setPushOn(false); } } catch (e: any) { toast.error(e?.message || "Push notifications couldn't be changed."); } setPushBusy(false); }} /></div>
+              <Button size="sm" variant="ghost" disabled={!pushOn} onClick={async () => { try { await testPush(); toast.info("Test sent. It should arrive in a few seconds."); } catch (e: any) { toast.error(e.message); } }}>Test</Button>
             </div>
           </div>
           <div className="border-t border-line" />

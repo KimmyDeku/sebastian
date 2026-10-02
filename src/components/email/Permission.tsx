@@ -12,10 +12,11 @@ const COPY = {
 };
 
 /** Explains what access is requested, then asks Google for it. */
-export async function grantGmail(kind: "send" | "read") {
+export async function grantGmail(kind: "send" | "read" | "calendar") {
   const token = await gmailToken(kind, true);
   const address = await googleEmail(token).catch(() => undefined);
-  patchEmail((e) => ({ ...e, ...(kind === "send" ? { allowSend: true } : { allowRead: true }), address: address || e.address }));
+  const flag = kind === "send" ? { allowSend: true } : kind === "read" ? { allowRead: true } : { allowCalendar: true };
+  patchEmail((e) => ({ ...e, ...flag, address: address || e.address }));
   return address;
 }
 

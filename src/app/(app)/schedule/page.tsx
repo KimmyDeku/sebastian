@@ -3,6 +3,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CalendarPlus, Download, Pencil, Trash2, Plus, Bell, BedDouble, Plane, User } from "lucide-react";
 import { Container, PageHeader } from "@/components/ui/Page";
+import { PlanMyTime } from "@/components/schedule/PlanMyTime";
+import { VictorianCalendar } from "@/components/schedule/VictorianCalendar";
 import { WizardCard } from "@/components/ui/Wizard";
 import { Option, inputCls, textareaCls } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
@@ -82,6 +84,13 @@ function ScheduleInner() {
       <PageHeader crumbs={[{ label: "Home", href: "/" }, { label: "Schedule", onClick: () => setWiz(false) }, ...(wiz ? [{ label: LABELS[step - 1] }] : [])]} title={wiz ? (editId ? "Edit entry" : "New entry") : "Scheduled"}
         subtitle={wiz ? undefined : "Appointments, reminders, bookings and trips in one place."} onBack={wiz ? () => (step > 1 ? setStep(step - 1) : (setWiz(false), reset())) : undefined}
         right={!wiz && <Button onClick={() => { reset(); setWiz(true); }}><Plus className="w-4 h-4" />Schedule</Button>} />
+
+      {!wiz && (
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-6 items-start mb-8">
+          <PlanMyTime />
+          <VictorianCalendar events={d.schedule} />
+        </div>
+      )}
 
       {wiz && (
         <div className="max-w-2xl">

@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Sebastian Companion",
+  "version": "1.0.0",
+  "description": "Save pages and tasks you haven't finished, and Sebastian will remind you when you next log in.",
+  "icons": { "16": "icons/icon-16.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "action": { "default_title": "Sebastian Companion", "default_popup": "popup.html" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage", "contextMenus", "activeTab", "alarms"],
+  "optional_permissions": ["tabs"],
+  "content_scripts": [{
+    "matches": ["http://localhost:3000/*", "https://*.vercel.app/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}
