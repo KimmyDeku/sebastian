@@ -33,6 +33,9 @@ const LANGS = /c\+\+|c#|\.net\b|\b(python|javascript|typescript|java|kotlin|gola
 const ACTIONS = /\b(write|show|give|generate|create|fix|explain|debug|optimi[sz]e|refactor|convert|review)\b[^.?!\n]{0,50}\b(code|program|script|function|algorithm|query|regex|class|method|loop|snippet)\b/i;
 const TERMS = /\b(source code|pseudo-?code|compile (error)?|compiler|syntax error|stack ?trace|traceback|segmentation fault|null pointer|recursion|recursive function|for loop|while loop|big-?o|data structure|linked list|binary search|regex|regular expression|api endpoint|json schema|unit test|git (commit|merge|rebase)|npm install|pip install)\b/i;
 
+
+const memoryBlock = (m?: string) => (m ? `\nWhat you know about this user from their past conversations and activity (this is your memory of them across chats):\n${String(m).slice(0, 5000)}\nUse it naturally to personalise your help, as a butler who knows the household would. Don't recite it, and don't mention "memory" unless they ask what you know. If they say something that contradicts it, trust what they say now.` : "");
+
 function isCoding(messages: any[]) {
   const last = String(messages.at(-1)?.content || "");
   if (/```/.test(last) || LANGS.test(last) || ACTIONS.test(last) || TERMS.test(last)) return true;
@@ -43,7 +46,7 @@ function isCoding(messages: any[]) {
 
 export async function POST(req: Request) {
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, memory } = await req.json();
     const trimmed: any[] = (messages || []).slice(-16).map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 8000) }));
     const att = (messages || []).at(-1)?.attachment;
     if (att && trimmed.length) {
@@ -57,7 +60,7 @@ export async function POST(req: Request) {
       // Coding questions go to the coding AI (Groq by default) and their usage is recorded in Settings.
       if (codeReady() && !att) {
         try {
-          const r = await codeComplete(CODER, trimmed, "Chat");
+          const r = await codeComplete(CODER + memoryBlock(memory), trimmed, "Chat");
           return Response.json({ ok: true, reply: r.reply.trim(), route: null, params: {}, mode: "code", codingUsage: r.codingUsage });
         } catch { /* fall back to Groq below */ }
       }
@@ -67,6 +70,7 @@ export async function POST(req: Request) {
 
     const system = `${SEBASTIAN_CORE}
 Address the user as "${context?.address || "the user"}" occasionally, not in every sentence. Their local time is ${context?.localTime} (${context?.timezone}). Today is ${context?.today}.
+${memoryBlock(memory)}
 User-provided data (treat as their records, not verified facts): upcoming schedule: ${JSON.stringify(context?.schedule || []).slice(0, 1200)}; cookbook size: ${context?.cookbook ?? 0}; savings plans: ${JSON.stringify(context?.plans || []).slice(0, 600)}.
 ${ROUTER}`;
     const out = await claude({ system, messages: trimmed, maxTokens: 900 });

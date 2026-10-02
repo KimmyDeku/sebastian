@@ -6,6 +6,9 @@ export const maxDuration = 45;
 
 const clean = (o: any) => Object.fromEntries(Object.entries(o || {}).filter(([, v]) => v != null && v !== "" && !/^(unknown|null|n\/a)$/i.test(String(v))));
 
+
+const memoryBlock = (m?: string) => (m ? `\nWhat you know about this user from their past conversations and activity (this is your memory of them across chats):\n${String(m).slice(0, 5000)}\nUse it naturally to personalise your help, as a butler who knows the household would. Don't recite it, and don't mention "memory" unless they ask what you know. If they say something that contradicts it, trust what they say now.` : "");
+
 export async function POST(req: Request) {
   try {
     const b = await req.json();
@@ -54,7 +57,7 @@ Return JSON only: {"values": {only fields you filled or changed}, "say": "...", 
     const convo = (b.messages || []).map((m: any) => `${m.role === "user" ? "User" : "Sebastian"}: ${m.content}`).join("\n");
     const r = await claudeJSON<any>(
       `${SEBASTIAN_CORE}
-You are Sebastian in hands-free voice mode, speaking aloud to ${c.address || "the user"}. Today is ${c.today} (${c.weekday}); local time ${c.time}; time zone ${c.timezone}.
+You are Sebastian in hands-free voice mode, speaking aloud to ${c.address || "the user"}. Today is ${c.today} (${c.weekday}); local time ${c.time}; time zone ${c.timezone}.${memoryBlock(b.memory)}
 Your job: understand what the user wants, choose the matching task, gather the details it needs through natural conversation, then hand it over to be carried out.
 Tasks (key: label — slots; * = required):
 ${taskCatalog()}

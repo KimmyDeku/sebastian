@@ -1,11 +1,16 @@
 import { getLang } from "./i18n";
 import { recordCodingUsage } from "./notebook";
 import { logFromApi } from "./activity";
+import { memoryForPrompt } from "./memory";
 
 export type ApiResult<T> = { ok: boolean; code?: string; error?: string; offline?: boolean } & T;
 
 export async function api<T = any>(url: string, body?: any, method = body ? "POST" : "GET"): Promise<ApiResult<T>> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return { ok: false, offline: true, code: "offline", error: "You're offline. Local actions still work; online searches will resume when you reconnect." } as ApiResult<T>;
+  // Conversations with Sebastian carry what he knows about the user, so new chats don't start from zero.
+  if (body && (url === "/api/chat" || url === "/api/agent") && body.mode !== "fill") {
+    try { const memory = memoryForPrompt(); if (memory) body = { ...body, memory }; } catch {}
+  }
   try {
     const headers: Record<string, string> = { "x-sebastian-lang": getLang() };
     if (body) headers["content-type"] = "application/json";

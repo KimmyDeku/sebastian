@@ -9,8 +9,6 @@ import { cx, relTime } from "@/lib/util";
 import { useState } from "react";
 import { ConfirmDialog } from "../ui/Modal";
 import { useUI } from "@/lib/ui";
-import { KIND, useHistory } from "../HistoryItems";
-import { deleteActivity } from "@/lib/activity";
 
 export function useUpcomingCount() {
   const d = useData();
@@ -21,7 +19,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const router = useRouter();
   const d = useData();
-  const history = useHistory();
   const count = useUpcomingCount();
   const [confirmOut, setConfirmOut] = useState(false);
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
@@ -29,7 +26,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       <Link href="/" onClick={onNavigate} className="px-2 pt-1" aria-label="Sebastian home"><Wordmark /></Link>
-            <button onClick={() => { onNavigate?.(); router.push("/chat?new=1"); }} className="mt-6 h-12 w-full px-5 py-3 rounded-2xl bg-ink text-white inline-flex items-center justify-center gap-2 text-[15px] font-medium hover:bg-ink-soft shadow-soft">
+      <button onClick={() => { onNavigate?.(); router.push("/chat?new=1"); }} className="mt-7 h-12 w-full rounded-2xl bg-ink text-white inline-flex items-center justify-center gap-2 text-[15px] hover:bg-ink-soft shadow-soft">
         <Plus className="w-5 h-5" aria-hidden /> New chat
       </button>
 
@@ -57,23 +54,23 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="mt-6 pt-5 border-t border-line flex-1 min-h-0">
-        <div className="flex items-center justify-between px-4 mb-1"><p className="text-[13px] text-muted">History</p><Link href="/history" onClick={onNavigate} className="text-[12px] text-muted hover:text-ink underline underline-offset-2">View all</Link></div>
-        {history.length === 0 && <p className="px-4 py-3 text-[13px] text-muted-soft">Your chats and activity will appear here.</p>}
+        <div className="flex items-center justify-between px-4 mb-1"><p className="text-[13px] text-muted">Recent chats</p><Link href="/history?tab=chats" onClick={onNavigate} className="text-[12px] text-muted hover:text-ink underline underline-offset-2">History</Link></div>
+        {d.chats.length === 0 && <p className="px-4 py-3 text-[13px] text-muted-soft">Your conversations will appear here.</p>}
         <ul className="divide-y divide-line">
-          {history.slice(0, 8).map((h) => { const K = KIND[h.kind]; const external = h.href?.startsWith("http"); return (
-            <li key={h.id} className="group relative">
-              <Link href={h.href || "/history"} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} onClick={onNavigate} className="flex items-center gap-2.5 px-4 py-3 hover:bg-cream/40 rounded-xl" title={h.title}>
-                <K.icon className="w-4 h-4 text-gold shrink-0" aria-hidden />
+          {[...d.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8).map((c) => (
+            <li key={c.id} className="group relative">
+              <Link href={`/chat?id=${c.id}`} onClick={onNavigate} className="flex items-center gap-2 px-4 py-3 hover:bg-cream/40 rounded-xl" title={c.title}>
                 <span className="flex-1 min-w-0">
-                  <span className="block truncate text-[14px]">{h.title}</span>
-                  <span className="block text-[12px] text-muted">{K.label} · {relTime(h.at)}</span>
+                  <span className="block truncate text-[14px]">{c.title}</span>
+                  <span className="block text-[12px] text-muted">{relTime(c.updatedAt)}</span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-muted group-hover:opacity-0" aria-hidden />
               </Link>
-              <button onClick={() => (h.chatId ? actions.deleteChat(h.chatId) : deleteActivity(h.id))} aria-label={`Delete ${h.title}`} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 w-8 h-8 rounded-full hover:bg-cream inline-flex items-center justify-center text-muted">
+              <button onClick={() => actions.deleteChat(c.id)} aria-label={`Delete chat: ${c.title}`} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 w-8 h-8 rounded-full hover:bg-cream inline-flex items-center justify-center text-muted">
                 <Trash2 className="w-4 h-4" />
               </button>
-            </li>); })}
+            </li>
+          ))}
         </ul>
       </div>
       <ConfirmDialog open={confirmOut} title="Log out of Sebastian?" body="Your data stays saved on this device for when you return." confirmLabel="Log out"

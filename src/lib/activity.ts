@@ -86,8 +86,19 @@ export function recordSaves() {
     const s = useStore.getState(); const d: any = s.sessionId ? s.data[s.sessionId] : null;
     return d?.places?.some((x: any) => x.id === p.id) ? { kind: "discover", title: `Saved place: ${cut(p.name, 50)}`, href: "/discover" } : null;
   });
-  wrap("savePlan", (p) => ({ kind: "finance", title: `Savings plan: ${cut(p.name || p.goal || "plan", 50)}`, href: "/finance" }));
-  wrap("addTxn", (t) => ({ kind: "finance", title: `${t.type === "income" ? "Income" : "Expense"} recorded: ${cut(t.category || t.note || "", 40)}`, href: "/finance?tab=money" }));
+  wrap("savePlan", (p) => ({ kind: "finance", title: `Savings plan updated: ${cut(p.name, 50)}`, detail: p.target ? `Target ${p.target}` : undefined, href: "/finance" }));
+  wrap("addTxn", (t) => ({ kind: "finance", title: `${t.type === "income" ? "Income" : "Expense"} logged: ${cut(t.label || t.category, 40)}`, detail: t.category, href: "/finance?tab=money" }));
+  // Removals count as actions too.
+  const name = (list: string, id: string, field: string) => { const s = useStore.getState(); const d: any = s.sessionId ? s.data[s.sessionId] : null; return cut((d?.[list] || []).find((x: any) => x.id === id)?.[field] || "", 50); };
+  const before = (n: string, fn: (...a: any[]) => Omit<Activity, "id" | "at"> | null) => {
+    const orig = A[n]; if (typeof orig !== "function") return;
+    A[n] = (...args: any[]) => { let a = null; try { a = fn(...args); } catch {} const r = orig(...args); if (a) logActivity(a); return r; };
+  };
+  before("deleteEvent", (id) => ({ kind: "schedule", title: `Removed from schedule: ${name("schedule", id, "title")}`, href: "/schedule" }));
+  before("removeRecipe", (id) => ({ kind: "recipe", title: `Removed from cookbook: ${name("cookbook", id, "title")}`, href: "/recipes/cookbook" }));
+  before("deleteTrip", (id) => ({ kind: "trip", title: `Trip deleted: ${name("trips", id, "destination")}`, href: "/travel" }));
+  before("deletePlan", (id) => ({ kind: "finance", title: `Savings plan deleted: ${name("plans", id, "name")}`, href: "/finance" }));
+  before("deleteTxn", (id) => ({ kind: "finance", title: `Entry deleted: ${name("txns", id, "label")}`, href: "/finance?tab=money" }));
 }
 
 /** Records links opened to other websites (for example a news story on the publisher's site). */

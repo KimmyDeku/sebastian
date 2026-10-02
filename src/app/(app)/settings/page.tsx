@@ -13,6 +13,11 @@ import { Gauge, Cloud, AtSign } from "lucide-react";
 import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
 import { clearActivity, useActivity } from "@/lib/activity";
+import { clearUsage } from "@/lib/usage";
+import { ActivityPanel } from "@/components/ActivityPanel";
+import { Activity as ActivityIcon } from "lucide-react";
+import { useMemory, refreshMemory, addPinned, forgetFact, forgetAll } from "@/lib/memory";
+import { Brain, X as XIcon, Pin } from "lucide-react";
 import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
 import { clientId as driveClientId } from "@/lib/drive";
 import { Container, PageHeader } from "@/components/ui/Page";
@@ -87,6 +92,10 @@ export default function Settings() {
   const nb = useNotebook();
   const em = useEmail();
   const activity = useActivity();
+  const mem = useMemory();
+  const [newFact, setNewFact] = useState("");
+  const [learningNow, setLearningNow] = useState(false);
+  const [forgetAsk, setForgetAsk] = useState(false);
   const router = useRouter();
   const { speak } = useSpeaker();
   const [open, setOpen] = useState<Record<string, boolean>>({ personal: true });
@@ -120,6 +129,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
+    if (window.location.hash === "#activity") { setOpen({ activity: true }); setTimeout(() => document.getElementById("activity-btn")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }
     if (window.location.hash === "#coding") { setOpen({ coding: true }); setTimeout(() => document.getElementById("coding-btn")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }
     // Back from a card or PayPal payment page: confirm the payment.
     const q = new URLSearchParams(window.location.search);
@@ -352,6 +362,53 @@ export default function Settings() {
           </div>
         </Section>
 
+        <Section id="activity" icon={ActivityIcon} title="Activity" summary={d.prefs.activityHistory === false ? "Tracking is off" : `${activity.length} action${activity.length === 1 ? "" : "s"} recorded · time spent in the app`} open={!!open.activity} onToggle={() => toggle("activity")}>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted">Activity records how long you spend in Sebastian and what you do: recipes, finance entries, news you read, bookings, trips, schedule changes and more. Together with your chats and Trip DNA, it helps Sebastian learn what you like so he can personalise his help. It&apos;s kept only with your account.</p>
+            <Toggle label="Track my activity" desc="When this is off, nothing new is recorded and no time is counted." on={d.prefs.activityHistory !== false} set={(v) => actions.setPrefs({ activityHistory: v })} />
+            {d.prefs.activityHistory !== false && <ActivityPanel compact />}
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" href="/history?tab=activity">Open full activity</Button>
+              <Button size="sm" variant="ghost" disabled={!activity.length} onClick={() => { clearActivity(); clearUsage(); toast.info("Activity cleared."); }}>Clear activity</Button>
+            </div>
+          </div>
+        </Section>
+
+        <Section id="memory" icon={Brain} title="Memory" summary={d.prefs.learning === false ? "Learning is paused" : mem.facts.length ? `Sebastian remembers ${mem.facts.length} thing${mem.facts.length === 1 ? "" : "s"} about you` : "Sebastian learns what helps you most"} open={!!open.memory} onToggle={() => toggle("memory")}>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted">Sebastian learns from your chat history, your activity (including time spent in each part of the app), your Trip DNA and your settings, so every new conversation starts with him knowing you. It&apos;s kept only with your account. He never records sensitive things like health, religion or politics unless you tell him to remember them, and doesn&apos;t learn from the contents of your emails.</p>
+            <Toggle label="Let Sebastian learn about me" desc="When this is off, he only uses the things you've added yourself." on={d.prefs.learning !== false} set={(v) => actions.setPrefs({ learning: v })} />
+            {mem.summary && d.prefs.learning !== false && (
+              <div className="rounded-2xl bg-cream/50 border border-cream-line p-4">
+                <p className="text-[12px] text-muted mb-1">How Sebastian sees you{mem.updatedAt ? ` · updated ${new Date(mem.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}</p>
+                <p className="text-[14px] leading-relaxed">{mem.summary}</p>
+                {mem.style && <p className="text-[13px] text-muted mt-2">{mem.style}</p>}
+              </div>
+            )}
+            {mem.facts.length > 0 && (
+              <ul className="rounded-2xl border border-line divide-y divide-line">
+                {mem.facts.map((f) => (
+                  <li key={f.id} className="flex items-center gap-3 px-4 py-2.5 text-[13.5px]">
+                    {f.pinned ? <Pin className="w-3.5 h-3.5 text-gold shrink-0" aria-label="Added by you" /> : <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0 mx-1" aria-hidden />}
+                    <span className="flex-1 min-w-0">{f.text}<span className="text-[11px] text-muted ml-2">{f.category}</span></span>
+                    <button onClick={() => forgetFact(f.id)} aria-label={`Forget: ${f.text}`} className="w-8 h-8 rounded-full hover:bg-cream inline-flex items-center justify-center text-muted shrink-0"><XIcon className="w-4 h-4" /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <label htmlFor="mem-add" className="sr-only">Tell Sebastian something to remember</label>
+              <input id="mem-add" className={inputCls} value={newFact} onChange={(e) => setNewFact(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newFact.trim()) { addPinned(newFact); setNewFact(""); } }} placeholder="Remember that… e.g. I prefer morning meetings" />
+              <Button variant="outline" onClick={() => { if (newFact.trim()) { addPinned(newFact); setNewFact(""); toast.success("Sebastian will remember that."); } }} disabled={!newFact.trim()}>Add</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" loading={learningNow} disabled={d.prefs.learning === false} onClick={async () => { setLearningNow(true); const ok = await refreshMemory(true); setLearningNow(false); ok ? toast.success("Sebastian's memory is up to date.") : toast.info("Nothing new to learn just yet."); }}>Update now</Button>
+              <Button size="sm" variant="ghost" disabled={!mem.facts.length && !mem.summary} onClick={() => setForgetAsk(true)}>Forget everything</Button>
+            </div>
+          </div>
+        </Section>
+        <ConfirmDialog open={forgetAsk} danger title="Forget everything Sebastian has learned?" body="His memory of you, including the things you added, will be cleared. Your chats, history and saved items stay." confirmLabel="Forget everything" onCancel={() => setForgetAsk(false)} onConfirm={() => { forgetAll(); setForgetAsk(false); toast.info("Sebastian's memory has been cleared."); }} />
+
         <Section id="prefs" icon={SlidersHorizontal} title="Preferences" summary="Appearance, form of address, voice and reminders" open={!!open.prefs} onToggle={() => toggle("prefs")}>
           <div className="py-3.5">
             <p className="text-[14px]">Appearance</p>
@@ -401,13 +458,6 @@ export default function Settings() {
           <div className="mt-4 space-y-3 text-sm text-muted leading-relaxed">
             <p>Your account and conversations are stored securely so you can use Sebastian on any device. Your messages are processed by our AI provider to generate replies and are not used to train AI models. Sebastian never books, pays or shares your data for advertising, and reminders never reveal their contents in notifications.</p>
             <Link href="/privacy" className="inline-flex items-center gap-1.5 text-ink underline underline-offset-4">Read the full privacy policy<ExternalLink className="w-3.5 h-3.5" /></Link>
-          </div>
-          <div className="mt-5 border-t border-line pt-2">
-            <Toggle label="Keep my activity history" desc="Sebastian keeps a private list of what you do (stories opened, recipes, trips, bookings, drafted emails and so on) under History, so you can find things again. It's stored only with your account." on={d.prefs.activityHistory !== false} set={(v) => actions.setPrefs({ activityHistory: v })} />
-            <div className="flex flex-wrap gap-2 pb-2">
-              <Button size="sm" variant="outline" href="/history">View history</Button>
-              <Button size="sm" variant="ghost" disabled={!activity.length} onClick={() => { clearActivity(); toast.info("Activity history cleared."); }}>Clear activity history ({activity.length})</Button>
-            </div>
           </div>
           <div className="flex flex-wrap gap-2 mt-5">
             <Button variant="outline" onClick={exportData}><Download className="w-4 h-4" />Export my data</Button>

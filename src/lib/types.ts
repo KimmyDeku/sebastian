@@ -25,6 +25,7 @@ export interface Prefs {
   voiceAlerts?: boolean;  // Sebastian says "Pardon me…" when a reminder is due (default on)
   plan?: "silver" | "gold" | "diamond"; // default silver
   activityHistory?: boolean; // keep a private history of activity (default on)
+  learning?: boolean; // let Sebastian learn about the user from their activity (default on)
 }
 
 export interface ChatAction { label: string; href: string }

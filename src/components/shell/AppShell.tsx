@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { Menu, PanelLeftClose } from "lucide-react";
 import { useUI } from "@/lib/ui";
 import { recordLinkOpens, recordSaves } from "@/lib/activity";
+import { refreshMemory } from "@/lib/memory";
+import { startUsageTracking } from "@/lib/usage";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { Sidebar } from "./Sidebar";
@@ -22,7 +24,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { sidebar, setSidebar, init, ready } = useUI();
   useEffect(() => { if (!ready) init(); }, [ready, init]);
-  useEffect(() => { recordSaves(); recordLinkOpens(); }, []);
+  useEffect(() => { recordSaves(); recordLinkOpens(); startUsageTracking(); }, []);
+  // Sebastian keeps learning quietly: shortly after opening, then every 15 minutes, when there's something new.
+  useEffect(() => {
+    if (!session) return;
+    const first = setTimeout(() => refreshMemory(), 8000);
+    const every = setInterval(() => refreshMemory(), 15 * 60000);
+    return () => { clearTimeout(first); clearInterval(every); };
+  }, [session]);
 
   useEffect(() => {
     if (hydrated && !session) router.replace(`/login?next=${encodeURIComponent(path)}`);
