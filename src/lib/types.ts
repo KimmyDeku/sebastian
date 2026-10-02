@@ -26,6 +26,7 @@ export interface Prefs {
   plan?: "silver" | "gold" | "diamond"; // default silver
   activityHistory?: boolean; // keep a private history of activity (default on)
   learning?: boolean; // let Sebastian learn about the user from their activity (default on)
+  onboarded?: boolean; // has seen the welcome tour
 }
 
 export interface ChatAction { label: string; href: string }

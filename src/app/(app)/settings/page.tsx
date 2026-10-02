@@ -20,7 +20,9 @@ import { useMemory, refreshMemory, addPinned, forgetFact, forgetAll } from "@/li
 import { alertPhrase } from "@/lib/alertPhrase";
 import { enablePush, disablePush, testPush, pushEndpoint, pushKey, pushSupported } from "@/lib/push";
 import { useCompanion, patchCompanion, openUnfinished } from "@/lib/companion";
-import { Puzzle, BellRing as BellRing2 } from "lucide-react";
+import { Puzzle, BellRing as BellRing2, MessageSquareText, Compass as CompassIcon } from "lucide-react";
+import { ContactForm } from "@/components/ContactForm";
+import { openTour } from "@/components/Onboarding";
 import { Brain, X as XIcon, Pin } from "lucide-react";
 import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
 import { clientId as driveClientId } from "@/lib/drive";
@@ -101,6 +103,7 @@ export default function Settings() {
   const [learningNow, setLearningNow] = useState(false);
   const [forgetAsk, setForgetAsk] = useState(false);
   const comp = useCompanion();
+  const [contact, setContact] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   useEffect(() => { setPushOn(!!pushEndpoint()); }, []);
@@ -437,6 +440,7 @@ export default function Settings() {
             </div>
           </div>
         </Section>
+        <ContactForm open={contact} onClose={() => setContact(false)} />
         <ConfirmDialog open={forgetAsk} danger title="Forget everything Sebastian has learned?" body="His memory of you, including the things you added, will be cleared. Your chats, history and saved items stay." confirmLabel="Forget everything" onCancel={() => setForgetAsk(false)} onConfirm={() => { forgetAll(); setForgetAsk(false); toast.info("Sebastian's memory has been cleared."); }} />
 
         <Section id="prefs" icon={SlidersHorizontal} title="Preferences" summary="Appearance, form of address, voice and reminders" open={!!open.prefs} onToggle={() => toggle("prefs")}>
@@ -503,6 +507,12 @@ export default function Settings() {
         </Section>
 
         <Section id="support" icon={LifeBuoy} title="Support" summary="WhatsApp, phone and email" open={!!open.support} onToggle={() => toggle("support")}>
+          <div className="mt-4 rounded-2xl bg-cream/50 border border-cream-line p-4 flex flex-wrap items-center gap-3">
+            <MessageSquareText className="w-5 h-5 text-gold shrink-0" aria-hidden />
+            <p className="flex-1 min-w-[200px] text-[13.5px]"><span className="font-medium">Complaints, suggestions and feedback.</span> <span className="text-muted">Found a problem or have an idea? Tell us. Every message reaches the Sebastian team.</span></p>
+            <Button onClick={() => setContact(true)}>Contact us</Button>
+          </div>
+          <div className="mt-3"><Button variant="ghost" size="sm" onClick={openTour}><CompassIcon className="w-4 h-4" />Take the welcome tour again</Button></div>
           <p className="text-sm text-muted mt-4">We&apos;re here to help. {SUPPORT.hours}.</p>
           <div className="grid sm:grid-cols-3 gap-3 mt-4">
             <a href={whatsappLink(`Hello Sebastian support, I need help with my account (${acc.email}).`)} target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-line bg-canvas p-4 hover:border-cream-line">

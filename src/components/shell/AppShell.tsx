@@ -20,6 +20,7 @@ import { StickyReminders } from "./StickyReminders";
 import { BirthdayCelebration } from "./BirthdayCelebration";
 import { CloudSync } from "./CloudSync";
 import { CompanionBridge } from "../CompanionBridge";
+import { Onboarding } from "../Onboarding";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
 
@@ -98,6 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <BirthdayCelebration />
       <CloudSync />
       <CompanionBridge />
+      <Onboarding />
       <VoiceLauncher />
       <VoiceAgent />
       <OfflineWatcher />
