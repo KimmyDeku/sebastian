@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { ToastHost } from "@/components/ui/Toast";
 import { LiveTranslator } from "@/components/LiveTranslator";
 import { AssistLayer } from "@/components/AssistLayer";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastHost />
         <LiveTranslator />
         <AssistLayer />
+        <Analytics />
       </body>
     </html>
   );
