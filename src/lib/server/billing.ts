@@ -3,6 +3,7 @@ import { Paynow } from "paynow";
 import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
 import { SUPPORT } from "@/lib/support";
+import { sendMail, canReach } from "./mail";
 
 /* ---------- Signed payment tickets (so the browser can't change the plan or amount) ---------- */
 const secret = () => process.env.BILLING_SECRET || "";
@@ -150,8 +151,7 @@ export async function receiptPdf(r: Receipt): Promise<Uint8Array> {
 
 /* ---------- Email the receipt (Resend) ---------- */
 export async function emailReceipt(r: Receipt, pdf: Uint8Array) {
-  const key = process.env.RESEND_API_KEY, from = process.env.BILLING_FROM_EMAIL;
-  if (!key || !from || !r.billedTo.email) return false;
+  if (!r.billedTo.email || !canReach(r.billedTo.email)) return false;
   const plan = PLAN_NAMES[r.plan];
   const html = `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px;color:#1C1B19;background:#FCFBF9">
     <p style="font-size:26px;margin:0">Sebastian</p>
@@ -165,10 +165,6 @@ export async function emailReceipt(r: Receipt, pdf: Uint8Array) {
     </table>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#6E6A64">Your receipt is attached, and it's saved under Settings, then Receipts.</p>
     <p style="font-family:Arial,sans-serif;font-size:11px;color:#9A958D;margin-top:32px">${SUPPORT.company} · ${SUPPORT.email}</p></div>`;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ from, to: [r.billedTo.email], subject: `Your Sebastian receipt ${r.number}`, html, attachments: [{ filename: `Sebastian-receipt-${r.number}.pdf`, content: Buffer.from(pdf).toString("base64") }] }),
-  });
+  const res = await sendMail({ to: r.billedTo.email, subject: `Your Sebastian receipt ${r.number}`, html, attachments: [{ filename: `Sebastian-receipt-${r.number}.pdf`, content: pdf }] });
   return res.ok;
 }
