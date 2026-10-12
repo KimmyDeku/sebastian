@@ -22,7 +22,7 @@ export function canReach(to: string) {
   return m === "resend-domain" || m === "gmail" || (m === "resend-test" && to.toLowerCase() === OWNER_EMAIL().toLowerCase());
 }
 
-let transport: nodemailer.Transporter | null = null;
+   let transport: any = null;
 export async function sendMail(m: Mail): Promise<{ ok: boolean; error?: string; via?: string }> {
   const method = mailMethod();
   const to = Array.isArray(m.to) ? m.to : [m.to];
