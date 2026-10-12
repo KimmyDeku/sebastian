@@ -301,7 +301,7 @@ function TravelInner() {
           <div className="space-y-5 min-w-0">
             <Inspiration dest={dest} data={insp} loading={inspLoading} interests={interests} mustSee={f.mustSee}
               onToggleMustSee={(n) => set("mustSee", f.mustSee.includes(n) ? f.mustSee.filter((x) => x !== n) : [...f.mustSee, n])}
-              onChoose={(n) => begin(n, { start: f.start, end: f.end })} />
+              onChoose={(n) => begin(n, { start: f.start, end: f.end })} start={f.start} end={f.end} travellers={f.travellers} />
             <div className="h-[380px] lg:h-[440px]">
               <Globe pins={pins} focus={coords} selected={dest} onPick={(p) => { if (p.name !== dest) begin(p.name, { start: f.start, end: f.end }); }} />
             </div>
