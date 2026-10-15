@@ -32,7 +32,8 @@ async function google(query: string, lat: number, lng: number, key: string, cate
   return (r.places || []).map((p: any) => ({
     id: p.id, name: p.displayName?.text, address: p.formattedAddress, lat: p.location.latitude, lng: p.location.longitude,
     rating: p.rating, ratingCount: p.userRatingCount, openNow: p.currentOpeningHours?.openNow, phone: p.nationalPhoneNumber,
-    photo: `/api/places/photo?${new URLSearchParams({ ...(p.photos?.[0]?.name ? { name: p.photos[0].name } : {}), lat: String(p.location.latitude), lng: String(p.location.longitude) }).toString()}`,
+    // The place's own Google photo, falling back to Street View or a map of the spot.
+    photo: `/api/places/photo?${p.photos?.[0]?.name ? `name=${encodeURIComponent(p.photos[0].name)}&` : ""}lat=${p.location.latitude}&lng=${p.location.longitude}`,
     mapsUrl: dirUrl(p.location.latitude, p.location.longitude, p.id), category, provider: "Google Maps",
   }));
 }
@@ -70,6 +71,5 @@ export async function searchPlaces(opts: { category: string; text?: string; lat?
     catch { results = []; }
   }
   if (!results.length) results = await osm(opts.category.toLowerCase(), label, lat, lng);
-    if (key) results = results.map((r) => (r.photo ? r : { ...r, photo: `/api/places/photo?lat=${r.lat}&lng=${r.lng}` }));
   return { results, provider, where, center: { lat, lng } };
 }

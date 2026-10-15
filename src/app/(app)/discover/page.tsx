@@ -169,13 +169,13 @@ function DiscoverInner() {
               center={res?.center || null} zoom={13} onPick={(pin) => { const hit = ordered.find((x) => x.id === pin.id); if (hit) setGo(hit); }} />
           )}
           {ordered.length === 0 ? <EmptyState title="Nothing found" body={err || "Try a wider area or another category."} action={<Button onClick={() => setPhase("pick")}>Change search</Button>} />
-            : mobile ? <SwipeDeck items={ordered} favs={favs} onFav={fav} onGo={setGo} fallbackImg={IMG_FOR[label] || IMG.cafe} />
+            : mobile ? <SwipeDeck items={ordered} favs={favs} onFav={fav} onGo={setGo} fallbackImg="" />
             : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {ordered.map((p) => (
                   <article key={p.id} className="bg-paper rounded-3xl border border-line overflow-hidden flex flex-col">
                     <div className="relative">
-                      <Img src={p.photo} fallback={IMG_FOR[label] || IMG.cafe} alt={p.name} label="" className="w-full h-44" />
+                      <Img src={p.photo} alt={p.name} label="" className="w-full h-44" />
                       <button onClick={() => fav(p)} aria-pressed={favs.has(p.id)} aria-label={favs.has(p.id) ? "Remove from your choices" : "Save as your choice"} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/95 shadow-soft inline-flex items-center justify-center"><Heart className={cx("w-5 h-5 text-gold", favs.has(p.id) && "fill-gold")} /></button>
                     </div>
                     <PlaceBody p={p} fav={favs.has(p.id)} />
