@@ -10,7 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export const config = { matcher: ["/api/:path*"] };
 
 // Always available: feedback, the reminder scheduler, payment callbacks and images.
-const OPEN = [/^\/api\/contact/, /^\/api\/push\/run/, /^\/api\/billing\/paynow-result/, /^\/api\/places\/photo/, /^\/api\/images\//];
+const OPEN = [/^\/api\/contact/, /^\/api\/waitlist/, /^\/api\/push\/run/, /^\/api\/billing\/paynow-result/, /^\/api\/places\/photo/, /^\/api\/images\//];
 const cache = new Map<string, { email: string; created: number; until: number }>();
 
 export async function middleware(req: NextRequest) {

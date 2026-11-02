@@ -7,7 +7,7 @@
 import { actions, useStore } from "./store";
 import { uid } from "./util";
 
-export type ActivityKind = "chat" | "news" | "recipe" | "email" | "trip" | "schedule" | "booking" | "discover" | "finance" | "fashion" | "notebook" | "link";
+export type ActivityKind = "chat" | "news" | "recipe" | "email" | "trip" | "schedule" | "booking" | "discover" | "finance" | "fashion" | "link";
 export type Activity = { id: string; at: string; kind: ActivityKind; title: string; detail?: string; href?: string };
 const EMPTY: Activity[] = [];
 
@@ -53,18 +53,6 @@ export function logFromApi(url: string, body: any, res: any) {
       if (["draft", "reply", "followup"].includes(b.mode)) return logActivity({ kind: "email", title: `${b.mode === "reply" ? "Reply drafted" : b.mode === "followup" ? "Follow-up drafted" : "Email drafted"}: ${cut(res.draft?.subject || "Untitled", 60)}`, detail: res.draft?.toName ? `To ${res.draft.toName}` : undefined, href: "/email" });
       if (b.mode === "triage") return logActivity({ kind: "email", title: "Inbox checked", detail: cut(res.overview, 80), href: "/email" });
       return;
-    case "/api/notebook":
-      if (b.mode === "ask") return logActivity({ kind: "notebook", title: `Research question: ${cut(b.question, 60)}`, href: "/notebook?s=research" });
-      if (b.mode === "guide") return logActivity({ kind: "notebook", title: `Study ${b.kind === "faq" ? "FAQ" : b.kind === "study" ? "guide" : "summary"} made`, href: "/notebook?s=research" });
-      if (b.mode === "lesson") return logActivity({ kind: "notebook", title: `${b.language} lesson: ${cut(res.lesson?.topic, 40)}`, href: "/notebook?s=languages" });
-      if (b.mode === "quiz") return logActivity({ kind: "notebook", title: `Quiz: ${cut(b.topic || b.subject || "your sources", 50)}`, href: b.subject ? "/notebook?s=tutor" : "/notebook?s=research" });
-      if (b.mode === "plan") return logActivity({ kind: "notebook", title: `Assignment planned: ${cut(b.title, 50)}`, href: "/notebook?s=assignments" });
-      if (b.mode === "feedback") return logActivity({ kind: "notebook", title: `Draft feedback: ${cut(b.title, 50)}`, href: "/notebook?s=assignments" });
-      return;
-    case "/api/notebook/code": {
-      const q = [...(b.messages || [])].reverse().find((m: any) => m.role === "user")?.content;
-      return logActivity({ kind: "notebook", title: `Coding: ${cut(q, 60)}`, href: "/notebook?s=coding" });
-    }
   }
 }
 

@@ -25,6 +25,7 @@ import { TrialGate } from "../TrialGate";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
+import { wipeNotebookData } from "@/lib/wipeNotebook";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
 
@@ -36,6 +37,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { sidebar, setSidebar, init, ready } = useUI();
   useEffect(() => { if (!ready) init(); }, [ready, init]);
   useEffect(() => { recordSaves(); recordLinkOpens(); startUsageTracking(); }, []);
+  // Notebook has been removed: permanently delete its old data (runs once; nothing to do afterwards).
+  useEffect(() => { if (hydrated) wipeNotebookData(); }, [hydrated]);
 
   // Keep this device's push reminders in step with the schedule (times only).
   const schedule = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.schedule : undefined));

@@ -1,5 +1,5 @@
 import { getLang } from "./i18n";
-import { recordCodingUsage } from "./notebook";
+import { recordCodingUsage } from "./codingUsage";
 import { logFromApi } from "./activity";
 import { memoryForPrompt } from "./memory";
 

@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "@/components/billing/Checkout";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
-import { useNotebook, patchNotebook } from "@/lib/notebook";
-import { Gauge, Cloud, AtSign } from "lucide-react";
+import { useCodingUsage, clearCodingUsage } from "@/lib/codingUsage";
+import { Gauge, AtSign } from "lucide-react";
 import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
 import { clearActivity, useActivity } from "@/lib/activity";
@@ -26,8 +26,6 @@ import { Puzzle, BellRing as BellRing2, MessageSquareText, Compass as CompassIco
 import { ContactForm } from "@/components/ContactForm";
 import { openTour } from "@/components/Onboarding";
 import { Brain, X as XIcon, Pin } from "lucide-react";
-import { connectDrive, disconnectDrive } from "@/components/notebook/DriveSync";
-import { clientId as driveClientId } from "@/lib/drive";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { Field, inputCls, Option } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
@@ -97,7 +95,7 @@ const PLANS = [
 export default function Settings() {
   const acc = useAccount();
   const d = useData();
-  const nb = useNotebook();
+  const codingUsage = useCodingUsage();
   const em = useEmail();
   const activity = useActivity();
   const tasks = useTasks();
@@ -314,20 +312,20 @@ export default function Settings() {
           )}
         </Section>
 
-        <Section id="coding" icon={Gauge} title="Coding usage" summary={(() => { const m = new Date().toISOString().slice(0, 7); const u = nb.codingUsage.filter((x) => x.at.startsWith(m)); return `${u.length} request${u.length === 1 ? "" : "s"} · ${u.reduce((a, x) => a + x.input + x.output, 0).toLocaleString()} tokens this month`; })()} open={!!open.coding} onToggle={() => toggle("coding")}>
+        <Section id="coding" icon={Gauge} title="Coding usage" summary={(() => { const m = new Date().toISOString().slice(0, 7); const u = codingUsage.filter((x) => x.at.startsWith(m)); return `${u.length} request${u.length === 1 ? "" : "s"} · ${u.reduce((a, x) => a + x.input + x.output, 0).toLocaleString()} tokens this month`; })()} open={!!open.coding} onToggle={() => toggle("coding")}>
           {(() => {
             const m = new Date().toISOString().slice(0, 7);
-            const month = nb.codingUsage.filter((x) => x.at.startsWith(m));
+            const month = codingUsage.filter((x) => x.at.startsWith(m));
             const input = month.reduce((a, x) => a + x.input, 0), output = month.reduce((a, x) => a + x.output, 0);
             const costKnown = month.some((x) => x.cost != null);
             const cost = month.reduce((a, x) => a + (x.cost || 0), 0);
-            const days = Array.from({ length: 14 }, (_, i) => { const dt = new Date(); dt.setDate(dt.getDate() - 13 + i); const k = dt.toISOString().slice(0, 10); return { k, t: nb.codingUsage.filter((x) => x.at.startsWith(k)).reduce((a, x) => a + x.input + x.output, 0) }; });
+            const days = Array.from({ length: 14 }, (_, i) => { const dt = new Date(); dt.setDate(dt.getDate() - 13 + i); const k = dt.toISOString().slice(0, 10); return { k, t: codingUsage.filter((x) => x.at.startsWith(k)).reduce((a, x) => a + x.input + x.output, 0) }; });
             const peak = Math.max(1, ...days.map((x) => x.t));
             const models = [...new Set(month.map((x) => x.model))];
             const where = month.reduce((acc: Record<string, number>, x) => ({ ...acc, [x.where]: (acc[x.where] || 0) + 1 }), {});
             return (
               <div className="mt-4 space-y-4">
-                <p className="text-sm text-muted">Coding requests, in Notebook and in chat, run on {month.at(-1)?.provider || "Groq"}. This tracks what they use this month.</p>
+                <p className="text-sm text-muted">Coding requests in chat run on {month.at(-1)?.provider || "Groq"}. This tracks what they use this month.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[["Requests", month.length.toLocaleString()], ["Input tokens", input.toLocaleString()], ["Output tokens", output.toLocaleString()], ["Estimated cost", costKnown ? `$${cost.toFixed(cost < 1 ? 4 : 2)}` : "Not set"]].map(([k, v]) => (
                     <div key={k} className="rounded-2xl bg-canvas border border-line p-3"><p className="text-[11.5px] text-muted">{k}</p><p className="font-serif text-xl mt-0.5">{v}</p></div>
@@ -341,26 +339,10 @@ export default function Settings() {
                 </div>
                 {month.length > 0 && <p className="text-[12.5px] text-muted">Model{models.length > 1 ? "s" : ""}: {models.join(", ")} · {Object.entries(where).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>}
                 {!costKnown && <p className="text-[12px] text-muted">To see costs, add your model&apos;s prices per million tokens to the server settings (CODE_INPUT_PRICE_PER_1M and CODE_OUTPUT_PRICE_PER_1M). Your official usage is in your provider&apos;s console, such as console.groq.com.</p>}
-                {nb.codingUsage.length > 0 && <Button size="sm" variant="ghost" onClick={() => { patchNotebook((n) => ({ ...n, codingUsage: [] })); toast.info("Usage history cleared."); }}>Clear usage history</Button>}
+                {codingUsage.length > 0 && <Button size="sm" variant="ghost" onClick={() => { clearCodingUsage(); toast.info("Usage history cleared."); }}>Clear usage history</Button>}
               </div>
             );
           })()}
-        </Section>
-
-        <Section id="drive" icon={Cloud} title="Google Drive" summary={nb.drive?.connected ? `Connected${nb.drive.email ? ` · ${nb.drive.email}` : ""}` : "Sync notebooks and imported files"} open={!!open.drive} onToggle={() => toggle("drive")}>
-          <div className="mt-4 space-y-4">
-            <p className="text-sm text-muted">Research notebooks are kept as Google Docs in a &ldquo;Sebastian Notebooks&rdquo; folder, so you can add them to NotebookLM and refresh them with its &ldquo;Sync with Google Drive&rdquo; button. Sebastian can only see the files it creates in your Drive.</p>
-            {!driveClientId() ? <Notice>Google Drive isn&apos;t set up on this server yet (NEXT_PUBLIC_GOOGLE_CLIENT_ID).</Notice> : nb.drive?.connected ? (
-              <>
-                <p className="text-sm inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-success" />Connected{nb.drive.email ? ` as ${nb.drive.email}` : ""}</p>
-                <Toggle label="Store imported files in Google Drive" desc="Uploaded files and web pages are saved in your Drive. Sebastian keeps a short preview here and reads the full text from Drive when it needs it, which saves space in Sebastian." on={nb.drive.offload !== false} set={(v) => patchNotebook((n) => ({ ...n, drive: { ...n.drive!, offload: v } }))} />
-                <div className="flex flex-wrap gap-2">
-                  {nb.drive.folderId && <Button size="sm" variant="outline" href={`https://drive.google.com/drive/folders/${nb.drive.folderId}`} external>Open the folder in Drive</Button>}
-                  <Button size="sm" variant="ghost" onClick={disconnectDrive}>Disconnect</Button>
-                </div>
-              </>
-            ) : <Button onClick={async () => { try { await connectDrive(); } catch (e: any) { toast.error(e?.message || "Google Drive couldn't connect."); } }}><Cloud className="w-4 h-4" />Connect Google Drive</Button>}
-          </div>
         </Section>
 
         <Section id="gmail" icon={AtSign} title="Google (Gmail and Calendar)" summary={em.allowSend || em.allowRead ? `${[em.allowSend && "Sending", em.allowRead && "Reading"].filter(Boolean).join(" and ")} allowed${em.address ? ` · ${em.address}` : ""}` : "Draft and send emails through Gmail"} open={!!open.gmail} onToggle={() => toggle("gmail")}>
@@ -407,7 +389,7 @@ export default function Settings() {
             </div>
             <div className="rounded-2xl border border-dashed border-line p-4 text-[13px] text-muted">
               <p className="font-medium text-ink">ChatGPT</p>
-              <p className="mt-1">OpenAI doesn&apos;t let other apps read your ChatGPT conversations, so this can&apos;t be connected. You can paste anything useful into a Sebastian chat or Notebook.</p>
+              <p className="mt-1">OpenAI doesn&apos;t let other apps read your ChatGPT conversations, so this can&apos;t be connected. You can paste anything useful into a Sebastian chat.</p>
             </div>
             <div className="rounded-2xl border border-dashed border-line p-4 text-[13px] text-muted">
               <p className="font-medium text-ink">Fitness apps</p>

@@ -13,7 +13,7 @@ const IDLE = 90_000;
 
 export const SECTION_NAMES: Record<string, string> = {
   home: "Home", chat: "Chat", recipes: "Recipes", booking: "Booking", travel: "Travel", discover: "Discover", schedule: "Schedule",
-  finance: "Finance", fashion: "Fashion", news: "News", email: "Email", notebook: "Notebook", apps: "Your apps", settings: "Settings", history: "History", other: "Other",
+  finance: "Finance", fashion: "Fashion", news: "News", email: "Email", apps: "Your apps", settings: "Settings", history: "History", other: "Other",
 };
 export function sectionOf(path: string) {
   const p = path.split("?")[0].split("/").filter(Boolean)[0] || "home";

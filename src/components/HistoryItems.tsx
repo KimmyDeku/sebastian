@@ -1,5 +1,5 @@
 "use client";
-import { MessageCircle, Newspaper, UtensilsCrossed, Mail, Plane, CalendarDays, BedDouble, Compass, BarChart3, Shirt, BookOpen, ExternalLink } from "lucide-react";
+import { MessageCircle, Newspaper, UtensilsCrossed, Mail, Plane, CalendarDays, BedDouble, Compass, BarChart3, Shirt, ExternalLink } from "lucide-react";
 import { useData } from "@/lib/store";
 import { useActivity, type Activity, type ActivityKind } from "@/lib/activity";
 
@@ -7,7 +7,7 @@ export const KIND: Record<ActivityKind, { label: string; icon: any }> = {
   chat: { label: "Chats", icon: MessageCircle }, news: { label: "News", icon: Newspaper }, recipe: { label: "Recipes", icon: UtensilsCrossed },
   email: { label: "Email", icon: Mail }, trip: { label: "Travel", icon: Plane }, schedule: { label: "Schedule", icon: CalendarDays },
   booking: { label: "Booking", icon: BedDouble }, discover: { label: "Discover", icon: Compass }, finance: { label: "Finance", icon: BarChart3 },
-  fashion: { label: "Fashion", icon: Shirt }, notebook: { label: "Notebook", icon: BookOpen }, link: { label: "Websites", icon: ExternalLink },
+  fashion: { label: "Fashion", icon: Shirt }, link: { label: "Websites", icon: ExternalLink },
 };
 
 /** Chats and activity together, newest first. */

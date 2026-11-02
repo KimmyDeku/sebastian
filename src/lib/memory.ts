@@ -61,11 +61,6 @@ export function buildSignals(): string | null {
   if ((d.places || []).length) lines.push(`SAVED PLACES: ${(d.places || []).slice(0, 15).map((p: any) => `${cut(p.name, 30)} (${p.category})`).join("; ")}`);
   if ((d.plans || []).length) lines.push(`SAVINGS GOALS: ${(d.plans || []).slice(0, 6).map((p: any) => cut(p.name || p.goal, 40)).join("; ")}`);
   if (d.news?.sources?.length) lines.push(`NEWS: follows ${(d.news.sources || []).join(", ")}; topics ${(d.news.categories || []).join(", ")}`);
-  const nb = d.notebook || {};
-  if ((nb.tutor || []).length) lines.push(`STUDYING: ${nb.tutor.map((t: any) => `${t.subject} (${t.level}; ${t.topics?.[0] || ""})`).join("; ")}`);
-  if ((nb.langs || []).length) lines.push(`LEARNING LANGUAGES: ${nb.langs.map((l: any) => `${l.language} (${l.level}, ${l.lessons} lessons)`).join("; ")}`);
-  if ((nb.notebooks || []).length) lines.push(`RESEARCH NOTEBOOKS: ${nb.notebooks.slice(0, 8).map((n: any) => cut(n.title, 40)).join("; ")}`);
-  if ((nb.codeChats || []).length) lines.push(`CODING: ${nb.codeChats.slice(0, 8).map((c: any) => `${c.language}: ${cut(c.title, 50)}`).join("; ")}`);
   if ((d.interests || []).length) lines.push(`INTERESTS THEY ASKED SEBASTIAN TO LOOK OUT FOR: ${(d.interests || []).slice(0, 20).join("; ")}`);
   // Routines (medication left out: it's health information)
   const rs = (d.routines || []).filter((r: any) => r.active && r.kind !== "medication");
