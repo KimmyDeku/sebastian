@@ -15,6 +15,8 @@ import { grantGmail } from "@/components/email/Permission";
 import { clearActivity, useActivity } from "@/lib/activity";
 import { clearUsage } from "@/lib/usage";
 import { ActivityPanel } from "@/components/ActivityPanel";
+import { TaskCard } from "@/components/agent/TaskCard";
+import { useTasks, clearFinished } from "@/lib/agent";
 import { Activity as ActivityIcon } from "lucide-react";
 import { useMemory, refreshMemory, addPinned, forgetFact, forgetAll } from "@/lib/memory";
 import { alertPhrase } from "@/lib/alertPhrase";
@@ -98,6 +100,7 @@ export default function Settings() {
   const nb = useNotebook();
   const em = useEmail();
   const activity = useActivity();
+  const tasks = useTasks();
   const mem = useMemory();
   const [newFact, setNewFact] = useState("");
   const [learningNow, setLearningNow] = useState(false);
@@ -379,6 +382,12 @@ export default function Settings() {
           <div className="mt-4 space-y-4">
             <p className="text-sm text-muted">Activity records how long you spend in Sebastian and what you do: recipes, finance entries, news you read, bookings, trips, schedule changes and more. Together with your chats and Trip DNA, it helps Sebastian learn what you like so he can personalise his help. It&apos;s kept only with your account.</p>
             <Toggle label="Track my activity" desc="When this is off, nothing new is recorded and no time is counted." on={d.prefs.activityHistory !== false} set={(v) => actions.setPrefs({ activityHistory: v })} />
+            <div className="rounded-2xl border border-line p-4">
+              <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium">Tasks</p>{tasks.some((t) => !["running", "awaiting"].includes(t.status)) && <button onClick={clearFinished} className="text-[12px] text-muted underline">Clear finished</button>}</div>
+              <p className="text-[12.5px] text-muted mt-1">What Sebastian has done, is doing and will do for you. Steps marked &ldquo;needs approval&rdquo; wait for you.</p>
+              {!tasks.length ? <p className="text-[13px] text-muted mt-3">No tasks yet. Open Tasks at the bottom of the screen and tell Sebastian what to take care of.</p>
+                : <div className="mt-3 space-y-2.5">{tasks.slice(0, 30).map((t) => <TaskCard key={t.id} task={t} open={t.status === "awaiting"} />)}</div>}
+            </div>
             {d.prefs.activityHistory !== false && <ActivityPanel compact />}
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" href="/history?tab=activity">Open full activity</Button>

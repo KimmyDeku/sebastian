@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle, Mic, UtensilsCrossed, BedDouble, Plane, Compass, CalendarDays, BarChart3, Shirt, Newspaper, Mail, BookOpen, BellRing, History, Settings, ShieldCheck, Brain, Volume2, VolumeX, ArrowRight, ArrowLeft, Sparkles, Feather } from "lucide-react";
+import { MessageCircle, Mic, LayoutGrid, UtensilsCrossed, BedDouble, Plane, Compass, CalendarDays, BarChart3, Shirt, Newspaper, Mail, BookOpen, BellRing, History, Settings, ShieldCheck, Brain, Volume2, VolumeX, ArrowRight, ArrowLeft, Sparkles, Feather } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { SebastianMark } from "./SebastianMark";
@@ -16,7 +16,7 @@ export const openTour = () => window.dispatchEvent(new Event("sebastian-tour"));
 
 const SUITES = [
   [UtensilsCrossed, "Recipes", "/recipes"], [BedDouble, "Booking", "/booking"], [Plane, "Travel", "/travel"], [Compass, "Discover", "/discover"], [CalendarDays, "Schedule", "/schedule"],
-  [BarChart3, "Finance", "/finance"], [Shirt, "Fashion", "/fashion"], [Newspaper, "News", "/news"], [Mail, "Email", "/email"], [BookOpen, "Notebook", "/notebook"],
+  [BarChart3, "Finance", "/finance"], [Shirt, "Fashion", "/fashion"], [Newspaper, "News", "/news"], [Mail, "Email", "/email"], [LayoutGrid, "Your apps", "/apps"],
 ] as const;
 
 /** A short, narrated welcome tour shown the first time someone uses Sebastian. */
@@ -38,7 +38,7 @@ export function Onboarding() {
       body: <div className="text-center"><div className="inline-flex"><SebastianMark size={72} state={speaking ? "speaking" : "idle"} /></div><p className="text-[15px] mt-4 leading-relaxed">I&apos;m Sebastian, your personal concierge. Allow me a moment to show you around. It takes less than a minute.</p></div> },
     { title: "Simply ask", say: "Type or speak to me from the home page or the chat. The round button at the bottom right is my Voice Concierge, for completely hands-free help.",
       body: <div className="space-y-3">{[[MessageCircle, "Type to me", "On the home page or in Chat, ask for anything in your own words."], [Mic, "Or speak", "Tap the round button at the bottom right for the Voice Concierge, fully hands-free."]].map(([I, t, s]: any) => <div key={t} className="flex gap-3 rounded-2xl border border-line p-3"><span className="w-10 h-10 rounded-xl bg-cream inline-flex items-center justify-center shrink-0"><I className="w-5 h-5 text-gold" /></span><span><span className="block text-[14px] font-medium">{t}</span><span className="block text-[13px] text-muted">{s}</span></span></div>)}</div> },
-    { title: "Everything in one place", say: "Each suite looks after one part of your life: recipes, bookings, travel, nearby services, your schedule, finances, style, the news, email and your notebook for study and work.",
+    { title: "Everything in one place", say: "Each suite looks after one part of your life: recipes, bookings, travel, nearby services, your schedule, finances, style, the news, email, and the apps you choose to connect.",
       body: <div><div className="grid grid-cols-5 gap-2">{SUITES.map(([I, l, h]) => <Link key={l} href={h} onClick={() => setOpen(false)} className="rounded-xl border border-line p-2 text-center hover:border-cream-line"><I className="w-5 h-5 text-gold mx-auto" /><span className="block text-[10.5px] mt-1">{l}</span></Link>)}</div><p className="text-[13px] text-muted mt-3">Each suite looks after one part of life. You&apos;ll find them in the menu on the left (or the menu button on a phone).</p></div> },
     { title: "Your calendar, kept for you", say: "Tell me your week or month, by voice or in writing, and I will arrange your calendar, add it to Google Calendar if you wish, and remind you discreetly, without ever reading private details aloud.",
       body: <div className="space-y-3">{[[Feather, "Schedule my week", "Say or type what's coming up; I arrange it on your calendar and, if you like, in Google Calendar."], [BellRing, "Discreet reminders", "I'll alert you before each appointment, never reading the details aloud."]].map(([I, t, s]: any) => <div key={t} className="flex gap-3 rounded-2xl border border-line p-3"><span className="w-10 h-10 rounded-xl bg-cream inline-flex items-center justify-center shrink-0"><I className="w-5 h-5 text-gold" /></span><span><span className="block text-[14px] font-medium">{t}</span><span className="block text-[13px] text-muted">{s}</span></span></div>)}</div> },

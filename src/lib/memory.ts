@@ -66,6 +66,10 @@ export function buildSignals(): string | null {
   if ((nb.langs || []).length) lines.push(`LEARNING LANGUAGES: ${nb.langs.map((l: any) => `${l.language} (${l.level}, ${l.lessons} lessons)`).join("; ")}`);
   if ((nb.notebooks || []).length) lines.push(`RESEARCH NOTEBOOKS: ${nb.notebooks.slice(0, 8).map((n: any) => cut(n.title, 40)).join("; ")}`);
   if ((nb.codeChats || []).length) lines.push(`CODING: ${nb.codeChats.slice(0, 8).map((c: any) => `${c.language}: ${cut(c.title, 50)}`).join("; ")}`);
+  if ((d.interests || []).length) lines.push(`INTERESTS THEY ASKED SEBASTIAN TO LOOK OUT FOR: ${(d.interests || []).slice(0, 20).join("; ")}`);
+  // Routines (medication left out: it's health information)
+  const rs = (d.routines || []).filter((r: any) => r.active && r.kind !== "medication");
+  if (rs.length) lines.push(`ROUTINES: ${rs.slice(0, 12).map((r: any) => r.title).join("; ")}`);
   const comp = d.companion;
   if (comp?.allowed && (comp.items || []).some((i: any) => i.status === "open")) lines.push(`UNFINISHED (from the browser extension): ${(comp.items || []).filter((i: any) => i.status === "open").slice(0, 10).map((i: any) => cut(i.title, 50)).join("; ")}`);
   const text = lines.join("\n");

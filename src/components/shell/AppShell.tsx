@@ -22,6 +22,9 @@ import { CloudSync } from "./CloudSync";
 import { CompanionBridge } from "../CompanionBridge";
 import { Onboarding } from "../Onboarding";
 import { TrialGate } from "../TrialGate";
+import { TaskDock } from "../agent/TaskDock";
+import { AgentEngine } from "../agent/AgentEngine";
+import { routineJobs } from "@/lib/routines";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
 
@@ -37,11 +40,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Keep this device's push reminders in step with the schedule (times only).
   const schedule = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.schedule : undefined));
   const prefs = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.prefs : undefined));
+  const routines = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.routines : undefined));
   useEffect(() => {
     if (!schedule) return;
-    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false), 2500);
+    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, routineJobs(routines || [])), 2500);
     return () => clearTimeout(t);
-  }, [schedule, prefs?.notifications]);
+  }, [schedule, routines, prefs?.notifications]);
 
   // Opened from a notification: Sebastian says the alert aloud (never its contents).
   const acc = useAccount();
@@ -67,7 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   useEffect(() => {
-    if (hydrated && !session) router.replace(`/login?next=${encodeURIComponent(path)}`);
+    // Visitors who aren't signed in see the landing page first; other pages go to log in.
+    if (hydrated && !session) router.replace(path === "/" ? "/welcome" : `/login?next=${encodeURIComponent(path)}`);
   }, [hydrated, session, router, path]);
 
   if (!hydrated || !session)
@@ -102,6 +107,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CompanionBridge />
       <Onboarding />
       <TrialGate />
+      <AgentEngine />
+      <TaskDock />
       <VoiceLauncher />
       <VoiceAgent />
       <OfflineWatcher />

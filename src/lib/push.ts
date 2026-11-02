@@ -51,10 +51,10 @@ export function jobsFor(events: ScheduleEvent[]) {
 }
 
 let last = "";
-export async function syncPush(events: ScheduleEvent[], enabled: boolean) {
+export async function syncPush(events: ScheduleEvent[], enabled: boolean, extra: { id: string; fireAt: string }[] = []) {
   const endpoint = pushEndpoint();
   if (!endpoint) return;
-  const jobs = enabled ? jobsFor(events) : [];
+  const jobs = enabled ? [...jobsFor(events), ...extra] : [];
   const sig = JSON.stringify(jobs);
   if (sig === last) return;
   last = sig;

@@ -5,6 +5,7 @@ import { CalendarPlus, Download, Pencil, Trash2, Plus, Bell, BedDouble, Plane, U
 import { Container, PageHeader } from "@/components/ui/Page";
 import { PlanMyTime } from "@/components/schedule/PlanMyTime";
 import { VictorianCalendar } from "@/components/schedule/VictorianCalendar";
+import { RoutinesPanel } from "@/components/schedule/RoutinesPanel";
 import { WizardCard } from "@/components/ui/Wizard";
 import { Option, inputCls, textareaCls } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
@@ -91,6 +92,7 @@ function ScheduleInner() {
           <VictorianCalendar events={d.schedule} />
         </div>
       )}
+      {!wiz && <div className="mb-8"><RoutinesPanel /></div>}
 
       {wiz && (
         <div className="max-w-2xl">
