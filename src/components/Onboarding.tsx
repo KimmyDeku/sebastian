@@ -10,6 +10,7 @@ import { actions, useAccount, useData } from "@/lib/store";
 import { formOfAddress } from "@/lib/address";
 import { useSpeaker } from "@/lib/voice";
 import { translateText } from "@/lib/translator";
+import { WHATS_NEW_VERSION } from "./WhatsNew";
 import { cx } from "@/lib/util";
 
 export const openTour = () => window.dispatchEvent(new Event("sebastian-tour"));
@@ -65,7 +66,7 @@ export function Onboarding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, i, voice]);
 
-  const finish = () => { cancel(); setOpen(false); actions.setPrefs({ onboarded: true }); };
+  const finish = () => { cancel(); setOpen(false); actions.setPrefs({ onboarded: true, whatsNew: WHATS_NEW_VERSION } as any); };
   const next = () => { cancel(); if (i < steps.length - 1) setI(i + 1); else finish(); };
   const back = () => { cancel(); setI(Math.max(0, i - 1)); };
   if (!open) return null;

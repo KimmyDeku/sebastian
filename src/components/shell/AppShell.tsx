@@ -22,6 +22,7 @@ import { CloudSync } from "./CloudSync";
 import { CompanionBridge } from "../CompanionBridge";
 import { Onboarding } from "../Onboarding";
 import { TrialGate } from "../TrialGate";
+import { WhatsNew } from "../WhatsNew";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
@@ -123,6 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CompanionBridge />
       <Onboarding />
       <TrialGate />
+      <WhatsNew />
       <AgentEngine />
       <TaskDock />
       <VoiceLauncher />
