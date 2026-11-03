@@ -1,7 +1,8 @@
 # Official app and service logos
 
-Sebastian shows a company's official logo when you put its file in this folder, named exactly as below.
-Until then it shows a tile with the name's initials.
+Sebastian automatically shows each company's own website icon. For a sharper, official logo, put its file in
+this folder, named exactly as below: your file always takes priority. Services without one website (such as car
+insurance or rent) show a tile with the name's initials.
 
 - Use **SVG** (best) or **PNG** (at least 128 x 128 pixels, ideally square with a transparent background).
 - Download logos from each company's official **brand assets / press kit / media kit** page (search "<company> brand assets").
