@@ -20,6 +20,7 @@ import { useTasks, clearFinished } from "@/lib/agent";
 import { Activity as ActivityIcon } from "lucide-react";
 import { useMemory, refreshMemory, addPinned, forgetFact, forgetAll } from "@/lib/memory";
 import { alertPhrase } from "@/lib/alertPhrase";
+import { GA_ID, getConsent, setConsent } from "@/lib/analytics";
 import { enablePush, disablePush, testPush, pushEndpoint, pushKey, pushSupported } from "@/lib/push";
 import { useCompanion, patchCompanion, openUnfinished } from "@/lib/companion";
 import { Puzzle, BellRing as BellRing2, MessageSquareText, Compass as CompassIcon } from "lucide-react";
@@ -106,6 +107,8 @@ export default function Settings() {
   const comp = useCompanion();
   const [contact, setContact] = useState(false);
   const [pushOn, setPushOn] = useState(false);
+  const [gaOn, setGaOn] = useState(false);
+  useEffect(() => { setGaOn(getConsent() === "granted"); }, []);
   const [pushBusy, setPushBusy] = useState(false);
   useEffect(() => { setPushOn(!!pushEndpoint()); }, []);
   const router = useRouter();
@@ -486,6 +489,7 @@ export default function Settings() {
         </Section>
 
         <Section id="privacy" icon={ShieldCheck} title="Privacy & data" summary="How Sebastian handles your data" open={!!open.privacy} onToggle={() => toggle("privacy")}>
+          {GA_ID && <div className="mt-4"><Toggle label="Allow analytics cookies" desc="Lets us use Google Analytics to see how Sebastian is used (for example which features are popular and which devices people use), so we can improve it. No names, emails or anything you type are shared." on={gaOn} set={(v) => { setConsent(v ? "granted" : "denied"); setGaOn(v); toast.info(v ? "Thank you. Analytics is on for this device." : "Analytics is off for this device."); }} /></div>}
           <div className="mt-4 space-y-3 text-sm text-muted leading-relaxed">
             <p>Your account and conversations are stored securely so you can use Sebastian on any device. Your messages are processed by our AI provider to generate replies and are not used to train AI models. Sebastian never books, pays or shares your data for advertising, and reminders never reveal their contents in notifications.</p>
             <Link href="/privacy" className="inline-flex items-center gap-1.5 text-ink underline underline-offset-4">Read the full privacy policy<ExternalLink className="w-3.5 h-3.5" /></Link>

@@ -2,6 +2,7 @@
 // Subscriptions and regular payments Sebastian tracks, with calendar reminders 3 days before each one.
 import { useStore, actions } from "./store";
 import { uid } from "./util";
+import { track } from "./analytics";
 
 export type Cycle = "weekly" | "monthly" | "quarterly" | "yearly";
 export type Service = { key: string; name: string; category: string; url?: string };
@@ -131,6 +132,7 @@ export function addSub(p: Omit<Subscription, "id" | "payments" | "createdAt" | "
   const s: Subscription = { ...p, id: uid("sub_"), payments: [], active: true, createdAt: new Date().toISOString() };
   s.eventId = schedule(s);
   save((x) => [s, ...x]);
+  track("add_subscription", { category: s.category, cycle: s.cycle });
   return s.id;
 }
 export function updateSub(id: string, p: Partial<Subscription>) {

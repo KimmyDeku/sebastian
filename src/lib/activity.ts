@@ -6,6 +6,7 @@
  */
 import { actions, useStore } from "./store";
 import { uid } from "./util";
+import { track } from "./analytics";
 
 export type ActivityKind = "chat" | "news" | "recipe" | "email" | "trip" | "schedule" | "booking" | "discover" | "finance" | "fashion" | "link";
 export type Activity = { id: string; at: string; kind: ActivityKind; title: string; detail?: string; href?: string };
@@ -24,6 +25,10 @@ export function logActivity(a: Omit<Activity, "id" | "at">) {
   const last = list[0];
   if (last && last.title === a.title && last.kind === a.kind && Date.now() - new Date(last.at).getTime() < 4000) return;
   s.patch((x: any) => ({ ...x, activity: [{ ...a, id: uid("ac_"), at: new Date().toISOString() }, ...(x.activity || [])].slice(0, 600) }));
+  // Analytics gets the kind of action only, never the details (no headlines, names, places or text).
+  const action = a.kind === "news" ? "Opened a story" : a.kind === "link" && !a.title.includes(":") ? "Opened a website" : a.title.split(":")[0].slice(0, 40);
+  track("sebastian_action", { module: a.kind, action });
+  if (/^Email sent/.test(a.title)) track("send_email");
 }
 export const deleteActivity = (id: string) => useStore.getState().patch((x: any) => ({ ...x, activity: (x.activity || []).filter((a: Activity) => a.id !== id) }));
 export const clearActivity = () => useStore.getState().patch((x: any) => ({ ...x, activity: [] }));

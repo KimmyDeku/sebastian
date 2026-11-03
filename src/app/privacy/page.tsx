@@ -149,7 +149,7 @@ export default function Privacy() {
         </S>
 
         <S id="cookies" title="Cookies and local storage">
-          <p>Sebastian does not use advertising or analytics cookies. We use your browser&apos;s local storage for strictly necessary purposes: keeping you signed in, storing your data for offline use, and remembering your language, theme and translation cache. You can clear these at any time in your browser settings; doing so signs you out on that device.</p>
+          <p>Sebastian does not use advertising cookies. <b className="font-medium">With your permission only</b>, we use Google Analytics cookies to understand how Sebastian is used: for example how many people visit, how they found us, their general location and type of device, and which features they use. We never send Google your name, email, phone number or anything you type, and you can change your choice at any time in Settings, under Privacy &amp; data. Google&apos;s use of this information is described in its own privacy policy. We also use your browser&apos;s local storage for strictly necessary purposes: keeping you signed in, storing your data for offline use, and remembering your language, theme and translation cache. You can clear these at any time in your browser settings; doing so signs you out on that device.</p>
         </S>
 
         <S id="security" title="Security">

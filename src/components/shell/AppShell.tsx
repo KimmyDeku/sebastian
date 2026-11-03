@@ -27,6 +27,7 @@ import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
 import { recJob } from "@/lib/recommend";
 import { wipeNotebookData } from "@/lib/wipeNotebook";
+import { identify, track } from "@/lib/analytics";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
 
@@ -38,6 +39,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { sidebar, setSidebar, init, ready } = useUI();
   useEffect(() => { if (!ready) init(); }, [ready, init]);
   useEffect(() => { recordSaves(); recordLinkOpens(); startUsageTracking(); }, []);
+  // Analytics: a sign-up or log-in (once per visit), with a random account id (never an email or name).
+  useEffect(() => {
+    if (!session || !acc) return;
+    try { if (sessionStorage.getItem("sebastian-ga-session") === session) return; sessionStorage.setItem("sebastian-ga-session", session); } catch {}
+    const t = setTimeout(() => {
+      identify(session, { plan: (prefs as any)?.plan || "silver" });
+      track(Date.now() - new Date((acc as any).createdAt || 0).getTime() < 10 * 60000 ? "sign_up" : "login");
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
   // Notebook has been removed: permanently delete its old data (runs once; nothing to do afterwards).
   useEffect(() => { if (hydrated) wipeNotebookData(); }, [hydrated]);
 

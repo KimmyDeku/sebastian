@@ -8,6 +8,7 @@ import { Img } from "@/components/ui/Img";
 import { SUPPORT, whatsappLink } from "@/lib/support";
 import { LANDING } from "@/lib/landing";
 import { cx } from "@/lib/util";
+import { track } from "@/lib/analytics";
 
 const FEATURES = [
   [UtensilsCrossed, "Recipes", "Ten recipes matched to your taste, diet and what's in the cupboard, with hands-free cooking."],
@@ -31,6 +32,7 @@ function Waitlist() {
     const r = await fetch("/api/waitlist", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(f) }).then((x) => x.json()).catch(() => ({ ok: false, error: "Please check your connection and try again." }));
     if (!r.ok) { setErr(r.error || "Something went wrong."); setState("idle"); return; }
     setState(r.already ? "already" : "done");
+    if (!r.already) track("join_waitlist", { interest: f.interest });
   };
   if (state === "done" || state === "already") return (
     <div className="text-center py-6" role="status">

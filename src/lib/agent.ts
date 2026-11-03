@@ -8,6 +8,7 @@ import { useStore, actions } from "./store";
 import { uid } from "./util";
 import { api } from "./api";
 import { logActivity } from "./activity";
+import { track } from "./analytics";
 
 export type StepStatus = "pending" | "running" | "done" | "awaiting" | "rejected" | "failed";
 export type Step = { id: string; label: string; tool: string; args: any; critical: boolean; why?: string; status: StepStatus; summary?: string; result?: any; error?: string };
@@ -52,6 +53,7 @@ export async function startTask(request: string, source: Task["source"] = "you",
   }
   upd(id, (t) => ({ ...t, title: plan!.title, steps: plan!.steps.map((s) => ({ ...s, id: uid("st_"), critical: s.critical || CRITICAL_TOOLS.has(s.tool), status: "pending" as const })) }));
   logActivity({ kind: "link", title: `Task started: ${plan.title}`, href: "/settings#activity" });
+  track("start_task", { source, steps: plan.steps.length });
   await run(id);
   return id;
 }

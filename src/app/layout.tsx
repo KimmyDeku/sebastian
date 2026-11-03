@@ -1,9 +1,10 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import { ToastHost } from "@/components/ui/Toast";
 import { LiveTranslator } from "@/components/LiveTranslator";
 import { AssistLayer } from "@/components/AssistLayer";
+import { Analytics } from "@vercel/analytics/next";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { THEME_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LiveTranslator />
         <AssistLayer />
         <Analytics />
+        <GoogleAnalytics />
       </body>
     </html>
   );
