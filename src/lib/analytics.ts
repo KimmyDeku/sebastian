@@ -1,7 +1,9 @@
 "use client";
 /**
- * Google Analytics 4, only after the visitor allows it. No personal details are ever sent:
- * only which parts of Sebastian are used and anonymous actions such as "Recipes generated".
+ * Google Analytics 4 with Consent Mode ("advanced"): it loads for everyone. Until a visitor
+ * allows analytics, Google receives only anonymous, cookie-free signals (no identifiers stored),
+ * which it uses to model overall behaviour. After "Allow", normal analytics cookies are used.
+ * No personal details are ever sent: only which parts of Sebastian are used and anonymous actions.
  */
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 const KEY = "sebastian-analytics-consent";
@@ -12,11 +14,11 @@ export const getConsent = (): Consent => { try { const v = localStorage.getItem(
 let loaded = false;
 
 export function loadGA() {
-  if (loaded || !GA_ID || typeof window === "undefined" || getConsent() !== "granted") return;
+  if (loaded || !GA_ID || typeof window === "undefined") return;
   loaded = true;
   window.dataLayer = window.dataLayer || [];
   window.gtag = function () { window.dataLayer.push(arguments); };
-  window.gtag("consent", "default", { analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+  window.gtag("consent", "default", { analytics_storage: getConsent() === "granted" ? "granted" : "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", wait_for_update: 500 });
   window.gtag("js", new Date());
   window.gtag("config", GA_ID, { anonymize_ip: true });
   const s = document.createElement("script");
@@ -26,14 +28,14 @@ export function loadGA() {
 
 export function setConsent(v: "granted" | "denied") {
   try { localStorage.setItem(KEY, v); } catch {}
-  if (v === "granted") loadGA();
-  else if (window.gtag) window.gtag("consent", "update", { analytics_storage: "denied" });
+  loadGA();
+  window.gtag?.("consent", "update", { analytics_storage: v });
   window.dispatchEvent(new Event("sebastian-consent"));
 }
 
-/** Sends an event, if the visitor allowed analytics. Never pass names, emails or anything people typed. */
+/** Sends an anonymous event (cookie-free until the visitor allows analytics). Never pass names, emails or anything people typed. */
 export function track(name: string, params: Record<string, string | number | boolean | undefined> = {}) {
-  if (getConsent() !== "granted" || !window.gtag) return;
+  if (!window.gtag) return;
   window.gtag("event", name, params);
 }
 /** A random account id (not an email or name), so Analytics can recognise returning users across devices. */
