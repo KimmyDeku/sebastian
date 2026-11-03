@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { ToastHost } from "@/components/ui/Toast";
 import { LiveTranslator } from "@/components/LiveTranslator";
 import { AssistLayer } from "@/components/AssistLayer";
@@ -43,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AssistLayer />
         <Analytics />
         <GoogleAnalytics />
+        {/* Pushify push notifications (its service worker is /pushify.js at the site root) */}
+        <Script id="pushify-pixel" src="https://pushify.com/pixel/kEM0fmU63n1wBZia.js" strategy="afterInteractive" />
       </body>
     </html>
   );

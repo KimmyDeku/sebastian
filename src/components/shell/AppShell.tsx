@@ -5,7 +5,8 @@ import { useUI } from "@/lib/ui";
 import { recordLinkOpens, recordSaves } from "@/lib/activity";
 import { refreshMemory } from "@/lib/memory";
 import { startUsageTracking } from "@/lib/usage";
-import { syncPush } from "@/lib/push";
+import { syncPush, enablePush } from "@/lib/push";
+import { moveServiceWorker } from "@/lib/notify";
 import { alertPhrase } from "@/lib/alertPhrase";
 import { useSpeaker } from "@/lib/voice";
 import { useAccount } from "@/lib/store";
@@ -63,6 +64,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, [...routineJobs(routines || []), recJob()]), 2500);
     return () => clearTimeout(t);
   }, [schedule, routines, prefs?.notifications]);
+
+  // Pushify now uses the site root; move Sebastian's own notifications to /sebastian/ (once).
+  useEffect(() => {
+    if (!session) return;
+    const t = setTimeout(() => moveServiceWorker(() => enablePush(alertPhrase(acc, prefs?.useTitle !== false))), 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   // Opened from a notification: Sebastian says the alert aloud (never its contents).
   const acc = useAccount();
