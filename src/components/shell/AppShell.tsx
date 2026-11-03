@@ -25,6 +25,7 @@ import { TrialGate } from "../TrialGate";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
+import { recJob } from "@/lib/recommend";
 import { wipeNotebookData } from "@/lib/wipeNotebook";
 import { SebastianMark } from "../SebastianMark";
 import { VoiceAgent, VoiceLauncher } from "../voice/VoiceAgent";
@@ -46,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const routines = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.routines : undefined));
   useEffect(() => {
     if (!schedule) return;
-    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, routineJobs(routines || [])), 2500);
+    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, [...routineJobs(routines || []), recJob()]), 2500);
     return () => clearTimeout(t);
   }, [schedule, routines, prefs?.notifications]);
 

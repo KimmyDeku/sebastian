@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { onApprovalNeeded, startTask, getAgentMeta, patchAgentMeta } from "@/lib/agent";
 import { allRoutines, occurrences, type Routine } from "@/lib/routines";
+import { allSubs, money } from "@/lib/subscriptions";
+import { refreshRecs } from "@/lib/recommend";
 import { alertPhrase } from "@/lib/alertPhrase";
 import { playChime } from "@/lib/sound";
 import { pushNotify } from "@/lib/notify";
@@ -67,6 +69,31 @@ function checkClashes() {
   }
 }
 
+/** On (or after) each due date, a task to pay and then record the payment, both waiting for approval. */
+function checkSubscriptions() {
+  const today = new Date().toISOString().slice(0, 10);
+  for (const s of allSubs()) {
+    if (!s.active || s.nextDue > today) continue;
+    const key = `sub:${s.id}:${s.nextDue}`;
+    if (seen(key)) continue;
+    mark(key);
+    alert(`Payment due: ${s.name}.`);
+    startTask(s.name, "sebastian", { title: `Payment due: ${s.name}`, steps: [
+      { label: `${s.name}: ${money(s.amount, s.currency)} is due${s.nextDue < today ? " (overdue)" : " today"}`, tool: "info", args: { text: `${s.name} (${money(s.amount, s.currency)}) was due on ${new Date(`${s.nextDue}T09:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}.` }, critical: false },
+      ...(s.payLink ? [{ label: `Open ${new URL(s.payLink).hostname} to pay`, tool: "open_link", args: { url: s.payLink }, critical: true, why: "You complete the payment yourself; Sebastian never enters card details." }] : []),
+      { label: `Record the payment of ${money(s.amount, s.currency)}`, tool: "mark_sub_paid", args: { id: s.id }, critical: true, why: "Adds it to your Finance expenses and schedules the next reminder." },
+    ] });
+  }
+}
+
+/** Each evening from 18:00: fresh suggestions, and a gentle note that they're ready. */
+async function suggestions() {
+  const now = new Date(); const today = now.toISOString().slice(0, 10);
+  if (now.getHours() < 18 || (getAgentMeta() as any).lastSuggest === today) return;
+  patchAgentMeta((m) => ({ ...m, lastSuggest: today } as any));
+  if (await refreshRecs(true)) alert("I've found a few things you might enjoy. Have a look in For you.");
+}
+
 function briefing() {
   const { d } = state(); if (!d) return;
   const now = new Date(); const today = now.toISOString().slice(0, 10);
@@ -101,7 +128,7 @@ export function AgentEngine() {
       if (now - last > 6 * 3600e3) return; // don't replay a backlog after a long absence
       for (const r of allRoutines()) for (const o of occurrences(r, new Date(last), new Date(now))) fireRoutine(r, o.when);
     };
-    const watch = () => { try { checkClashes(); briefing(); } catch {} };
+    const watch = () => { try { checkClashes(); checkSubscriptions(); briefing(); suggestions(); } catch {} };
     const a = setInterval(tick, 30000), b = setInterval(watch, 10 * 60000);
     const first = setTimeout(watch, 15000);
     tick();

@@ -23,7 +23,7 @@ const upd = (id: string, fn: (t: Task) => Task) => save((ts) => ts.map((t) => (t
 export const getAgentMeta = (): AgentMeta => { const s = useStore.getState(); return ((s.sessionId ? (s.data[s.sessionId] as any)?.agent : null) as AgentMeta) || { seen: [] }; };
 export const patchAgentMeta = (fn: (m: AgentMeta) => AgentMeta) => useStore.getState().patch((d: any) => ({ ...d, agent: fn({ seen: [], ...(d.agent || {}) }) }));
 
-export const CRITICAL_TOOLS = new Set(["add_event", "reschedule_event", "add_routine", "send_email", "open_link", "confirm"]);
+export const CRITICAL_TOOLS = new Set(["add_event", "reschedule_event", "add_routine", "send_email", "open_link", "confirm", "mark_sub_paid"]);
 const listeners = new Set<(t: Task, s: Step) => void>();
 /** Lets the app react when a task needs the user's approval (for a notification). */
 export const onApprovalNeeded = (fn: (t: Task, s: Step) => void) => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -152,6 +152,11 @@ async function execute(s: Step): Promise<Out> {
       return { ok: true, summary: `Opened ${new URL(a.url).hostname}. Finish there; Sebastian never enters passwords or card details.` };
     }
     case "confirm": return { ok: true, summary: a.done || "Confirmed." };
+    case "mark_sub_paid": {
+      const { markPaid } = await import("./subscriptions");
+      const next = markPaid(a.id);
+      return next ? { ok: true, summary: `Payment recorded in Finance. Next one due ${new Date(`${next}T09:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}.` } : { ok: false, error: "That subscription wasn't found." };
+    }
     default: return { ok: false, error: `Sebastian can't do "${s.tool}" yet.` };
   }
 }

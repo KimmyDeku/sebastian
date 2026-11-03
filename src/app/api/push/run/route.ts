@@ -19,7 +19,9 @@ export async function GET(req: Request) {
     const s: any = byEndpoint.get(j.endpoint);
     if (s) {
       try {
-        await push().sendNotification(s.subscription, JSON.stringify({ title: "Sebastian", body: s.phrase, tag: `sebastian-${j.id}`, url: "/schedule?alert=1" }), { TTL: 3600, urgency: "high" });
+        const suggestion = String(j.id).startsWith("rec_");
+        const body = suggestion ? String(s.phrase).replace(/you have a notification that requires your attention\.?/i, "I've found something you might enjoy.") : s.phrase;
+        await push().sendNotification(s.subscription, JSON.stringify({ title: "Sebastian", body, tag: `sebastian-${j.id}`, url: suggestion ? "/for-you" : "/schedule?alert=1" }), { TTL: 3600, urgency: suggestion ? "normal" : "high" });
         sent++;
       } catch (e: any) {
         if (e?.statusCode === 404 || e?.statusCode === 410) { gone++; await c.from("push_jobs").delete().eq("endpoint", j.endpoint); await c.from("push_subscriptions").delete().eq("endpoint", j.endpoint); byEndpoint.delete(j.endpoint); continue; }

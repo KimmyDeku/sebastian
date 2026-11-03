@@ -2,6 +2,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Container, PageHeader } from "@/components/ui/Page";
+import { Subscriptions } from "@/components/finance/Subscriptions";
 import { Plans } from "@/components/finance/Plans";
 import { Money } from "@/components/finance/Money";
 import { cx } from "@/lib/util";
@@ -17,18 +18,19 @@ const TIPS = [
 
 function FinanceInner() {
   const sp = useSearchParams();
-  const [tab, setTab] = useState<"plans" | "money" | "tips">((sp.get("tab") as any) || "plans");
+  const [tab, setTab] = useState<"plans" | "money" | "subs" | "tips">((sp.get("tab") as any) || "plans");
   return (
     <Container>
       <PageHeader crumbs={[{ label: "Home", href: "/" }, { label: "Finance" }]} title="Clarity for what's next" subtitle="An accountant's eye on the figures you record. Budgeting guidance, not financial advice." />
-      <div className="grid grid-cols-3 rounded-2xl bg-paper border border-line p-1 mb-10 max-w-xl" role="tablist">
-        {([["plans", "Plans"], ["money", "Income vs. expenses"], ["tips", "Tips"]] as const).map(([k, l]) => (
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-2xl bg-paper border border-line p-1 mb-10 max-w-2xl" role="tablist">
+        {([["plans", "Plans"], ["money", "Income vs. expenses"], ["subs", "Subscriptions"], ["tips", "Tips"]] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx("h-11 rounded-xl text-[13px] md:text-sm", tab === k ? "bg-canvas shadow-soft text-ink font-medium" : "text-muted")}>{l}</button>
         ))}
       </div>
       <div className={tab === "plans" ? "max-w-2xl" : ""}>
         {tab === "plans" && <Plans />}
         {tab === "money" && <Money />}
+        {tab === "subs" && <Subscriptions />}
         {tab === "tips" && (
           <div className="grid md:grid-cols-2 gap-5">{TIPS.map(([t, b]) => <div key={t} className="rounded-3xl bg-paper border border-line p-6"><h3 className="t-h3">{t}</h3><p className="text-sm text-muted mt-2 leading-relaxed">{b}</p></div>)}</div>
         )}

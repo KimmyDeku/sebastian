@@ -65,6 +65,8 @@ export function buildSignals(): string | null {
   // Routines (medication left out: it's health information)
   const rs = (d.routines || []).filter((r: any) => r.active && r.kind !== "medication");
   if (rs.length) lines.push(`ROUTINES: ${rs.slice(0, 12).map((r: any) => r.title).join("; ")}`);
+  if ((d.recs?.liked || []).length) lines.push(`SUGGESTIONS THEY LIKED: ${d.recs.liked.slice(0, 12).join("; ")}`);
+  if ((d.recs?.disliked || []).length) lines.push(`SUGGESTIONS THEY DIDN'T WANT: ${d.recs.disliked.slice(0, 12).join("; ")}`);
   const comp = d.companion;
   if (comp?.allowed && (comp.items || []).some((i: any) => i.status === "open")) lines.push(`UNFINISHED (from the browser extension): ${(comp.items || []).filter((i: any) => i.status === "open").slice(0, 10).map((i: any) => cut(i.title, 50)).join("; ")}`);
   const text = lines.join("\n");

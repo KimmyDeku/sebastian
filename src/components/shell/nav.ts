@@ -1,4 +1,4 @@
-import { Home, Newspaper, CalendarDays, Settings, UtensilsCrossed, BedDouble, Plane, Compass, BarChart3, Shirt, MessageCircle, LayoutGrid } from "lucide-react";
+import { Home, Newspaper, CalendarDays, Settings, UtensilsCrossed, BedDouble, Plane, Compass, BarChart3, Shirt, MessageCircle, LayoutGrid, Sparkles } from "lucide-react";
 
 export const SUITES = [
   { key: "recipes", label: "Recipes", href: "/recipes", icon: UtensilsCrossed },
@@ -15,6 +15,7 @@ export const PRIMARY = [
   { label: "Home", href: "/", icon: Home },
   { label: "News", href: "/news", icon: Newspaper },
   { label: "Your schedule", href: "/schedule", icon: CalendarDays, badge: "schedule" as const },
+  { label: "For you", href: "/for-you", icon: Sparkles },
   { label: "Your apps", href: "/apps", icon: LayoutGrid },
 ];
 

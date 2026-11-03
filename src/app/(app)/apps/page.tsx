@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Mail, CalendarDays, Puzzle, Slack, Send, MessageCircle, Facebook, Instagram, Twitter, Linkedin, Plug, Eye, Plus, X } from "lucide-react";
+import { Puzzle, Plug, Eye, Plus, X } from "lucide-react";
+import { AppLogo } from "@/components/AppLogo";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { useEmail, patchEmail, forgetGmail, googleClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
@@ -10,7 +11,7 @@ import { cx } from "@/lib/util";
 import { toast } from "@/components/ui/Toast";
 
 type Status = "on" | "off" | "soon" | "unavailable";
-type App = { key: string; name: string; icon: any; does: string; status: Status; note?: string; toggle?: (v: boolean) => Promise<void> | void };
+type App = { key: string; name: string; icon?: any; does: string; status: Status; note?: string; toggle?: (v: boolean) => Promise<void> | void };
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className={cx("w-11 h-6 rounded-full relative transition-colors shrink-0", on ? "bg-ink" : "bg-line")}><span className={cx("absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all", on ? "left-[22px]" : "left-0.5")} /></button>;
@@ -31,17 +32,17 @@ export default function YourApps() {
   };
 
   const apps: App[] = [
-    { key: "gmail", name: "Gmail", icon: Mail, does: "Summarises your inbox, reminds you to follow up on emails you've sent, and drafts replies for you to approve.", status: em.allowRead ? "on" : "off", toggle: g("read", "allowRead") },
-    { key: "calendar", name: "Google Calendar", icon: CalendarDays, does: "Adds the plans you approve to your Google Calendar, with email reminders.", status: em.allowCalendar ? "on" : "off", toggle: g("calendar", "allowCalendar") },
+    { key: "gmail", name: "Gmail", does: "Summarises your inbox, reminds you to follow up on emails you've sent, and drafts replies for you to approve.", status: em.allowRead ? "on" : "off", toggle: g("read", "allowRead") },
+    { key: "google_calendar", name: "Google Calendar", does: "Adds the plans you approve to your Google Calendar, with email reminders.", status: em.allowCalendar ? "on" : "off", toggle: g("calendar", "allowCalendar") },
     { key: "browser", name: "Browser (Sebastian Companion)", icon: Puzzle, does: "Remembers pages and tasks you haven't finished. Filling in basic details on forms is coming next; never passwords or card numbers.", status: comp.allowed ? "on" : "off", toggle: (v) => patchCompanion((x) => ({ ...x, allowed: v })) },
-    { key: "slack", name: "Slack", icon: Slack, does: "Will summarise messages you missed in your channels.", status: "soon", note: "Needs a Sebastian Slack app, coming in the next update." },
-    { key: "telegram", name: "Telegram", icon: Send, does: "Will summarise messages you forward to Sebastian's Telegram bot.", status: "soon", note: "Telegram only lets apps see messages sent to their bot." },
+    { key: "slack", name: "Slack", does: "Will summarise messages you missed in your channels.", status: "soon", note: "Needs a Sebastian Slack app, coming in the next update." },
+    { key: "telegram", name: "Telegram", does: "Will summarise messages you forward to Sebastian's Telegram bot.", status: "soon", note: "Telegram only lets apps see messages sent to their bot." },
     { key: "mcp", name: "Other apps (MCP)", icon: Plug, does: "Will connect services such as Zapier or Composio, giving Sebastian safe access to thousands of apps, with your approval for any change.", status: "soon" },
-    { key: "instagram", name: "Instagram", icon: Instagram, does: "Will learn from your own posts (Instagram doesn't share your feed or likes with apps).", status: "soon", note: "Needs Meta's approval." },
-    { key: "facebook", name: "Facebook", icon: Facebook, does: "Will learn from your own posts and pages (Facebook doesn't share your feed with apps).", status: "soon", note: "Needs Meta's approval." },
-    { key: "x", name: "X (Twitter)", icon: Twitter, does: "Could learn from posts you like and follow.", status: "soon", note: "X charges about $200 a month for this access." },
-    { key: "whatsapp", name: "WhatsApp", icon: MessageCircle, does: "WhatsApp doesn't allow any app to read personal chats.", status: "unavailable", note: "Tip: in WhatsApp, open a chat, choose Export chat, and attach the file in a Sebastian chat for a summary." },
-    { key: "linkedin", name: "LinkedIn", icon: Linkedin, does: "LinkedIn doesn't let apps read your feed or job matches.", status: "unavailable", note: "Sebastian will find opportunities on trusted job sites instead, in the next update." },
+    { key: "instagram", name: "Instagram", does: "Will learn from your own posts (Instagram doesn't share your feed or likes with apps).", status: "soon", note: "Needs Meta's approval." },
+    { key: "facebook", name: "Facebook", does: "Will learn from your own posts and pages (Facebook doesn't share your feed with apps).", status: "soon", note: "Needs Meta's approval." },
+    { key: "x", name: "X (Twitter)", does: "Could learn from posts you like and follow.", status: "soon", note: "X charges about $200 a month for this access." },
+    { key: "whatsapp", name: "WhatsApp", does: "WhatsApp doesn't allow any app to read personal chats.", status: "unavailable", note: "Tip: in WhatsApp, open a chat, choose Export chat, and attach the file in a Sebastian chat for a summary." },
+    { key: "linkedin", name: "LinkedIn", does: "LinkedIn doesn't let apps read your feed or job matches.", status: "unavailable", note: "Sebastian will find opportunities on trusted job sites instead, in the next update." },
   ];
 
   const add = () => { const v = text.trim(); if (!v) return; setInterests((x) => (x.includes(v) ? x : [...x, v])); setText(""); };
@@ -64,7 +65,7 @@ export default function YourApps() {
         {apps.map((a) => { const [chip, cls] = CHIP[a.status]; return (
           <article key={a.key} className={cx("rounded-2xl border p-4 bg-paper flex flex-col", a.status === "unavailable" ? "border-dashed border-line" : "border-line")}>
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-xl bg-cream inline-flex items-center justify-center shrink-0"><a.icon className="w-5 h-5 text-gold" aria-hidden /></span>
+              {a.icon ? <span className="w-10 h-10 rounded-xl bg-cream inline-flex items-center justify-center shrink-0"><a.icon className="w-5 h-5 text-gold" aria-hidden /></span> : <AppLogo k={a.key} name={a.name} />}
               <div className="flex-1 min-w-0"><p className="text-[14.5px] font-medium">{a.name}</p><span className={cx("inline-block mt-1 text-[10.5px] rounded-full px-2 py-0.5", cls)}>{chip}</span></div>
               {a.toggle && <Switch on={a.status === "on"} onChange={(v) => a.toggle!(v)} label={`Allow Sebastian to view ${a.name}`} />}
             </div>
