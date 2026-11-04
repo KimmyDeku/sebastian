@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { UtensilsCrossed, BedDouble, Plane, Compass, CalendarDays, BarChart3, Shirt, Newspaper, Mail, BookOpen, LayoutGrid, Play, MessageCircle, ArrowRight, ShieldCheck, Mic, Sparkles, CheckCircle2, Lock, Brain, Loader2 } from "lucide-react";
 import { Wordmark, SebastianMark } from "@/components/SebastianMark";
@@ -8,6 +8,8 @@ import { Img } from "@/components/ui/Img";
 import { SUPPORT, whatsappLink } from "@/lib/support";
 import { LANDING } from "@/lib/landing";
 import { cx } from "@/lib/util";
+import { SiteHeader, SiteFooter } from "@/components/landing/SiteChrome";
+import { HearSebastian, TrayStory, Partners, Wave } from "@/components/landing/Interactive";
 import { track } from "@/lib/analytics";
 
 const FEATURES = [
@@ -88,25 +90,17 @@ function Demo() {
   );
 }
 
+function HearWave() {
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => { const f = (e: Event) => setPlaying((e as CustomEvent).detail === true); window.addEventListener("sebastian-voice", f); return () => window.removeEventListener("sebastian-voice", f); }, []);
+  return <Wave playing={playing} dark />;
+}
+
 export default function Welcome() {
   const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   return (
     <div className="min-h-screen bg-canvas text-ink overflow-x-clip">
-      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur border-b border-line">
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-3">
-          <Link href="/welcome" aria-label="Sebastian"><Wordmark /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-[14px] text-muted" aria-label="Page sections">
-            <button onClick={() => go("demo")} className="hover:text-ink">Demo</button>
-            <button onClick={() => go("features")} className="hover:text-ink">Features</button>
-            <button onClick={() => go("contact")} className="hover:text-ink">Contact</button>
-          </nav>
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:inline-flex"><LanguageMenu /></span>
-            <Link href="/login" className="h-10 px-4 rounded-pill text-[14px] inline-flex items-center hover:bg-cream">Log in</Link>
-            <button onClick={() => go("waitlist")} className="h-10 px-4 rounded-pill bg-ink text-white text-[14px] hidden sm:inline-flex items-center">Join the waitlist</button>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         {/* Hero */}
@@ -119,6 +113,7 @@ export default function Welcome() {
               <button onClick={() => go("waitlist")} className="h-12 px-6 rounded-pill bg-ink text-white text-[15px] inline-flex items-center gap-2"><Sparkles className="w-4 h-4" />Join the waitlist</button>
               {LANDING.openSignups && <Link href="/signup" className="h-12 px-6 rounded-pill border border-ink text-[15px] inline-flex items-center gap-2">Try Sebastian<ArrowRight className="w-4 h-4" /></Link>}
               <button onClick={() => go("demo")} className="h-12 px-5 rounded-pill text-[15px] inline-flex items-center gap-2 hover:bg-cream"><Play className="w-4 h-4" />Watch the demo</button>
+              <HearSebastian />
             </div>
             <p className="text-[12.5px] text-muted mt-5 inline-flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-success" />Free to test · Your information stays private</p>
           </div>
@@ -127,6 +122,8 @@ export default function Welcome() {
             <Img src={LANDING.heroImage} fallback="/images/travel-collage.jpg" alt="Sebastian, the butler concierge" label="" className="relative w-full aspect-[4/5] rounded-[32px] border border-line shadow-lift" />
           </div>
         </section>
+
+        <Partners />
 
         {/* Demo */}
         <section id="demo" className="scroll-mt-20 bg-paper border-y border-line">
@@ -139,6 +136,8 @@ export default function Welcome() {
             <Demo />
           </div>
         </section>
+
+        <TrayStory />
 
         {/* Features */}
         <section id="features" className="scroll-mt-20 max-w-6xl mx-auto px-5 py-16 md:py-20">
@@ -162,10 +161,27 @@ export default function Welcome() {
           </div>
         </section>
 
+        {/* The voice */}
+        <section aria-label="Sebastian's voice" className="bg-ink text-white">
+          <div className="max-w-6xl mx-auto px-5 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="t-kicker text-[#E6C98F]">The voice</p>
+              <h2 className="font-serif text-5xl md:text-6xl leading-[1.02] mt-3">Don&apos;t type.<br /><em className="text-white/70">Just speak.</em></h2>
+              <p className="text-white/70 mt-5 max-w-md leading-relaxed">Sebastian speaks with a calm, refined voice, and listens just as well: in the app, in your tasks, and on any website with Sebastian Companion.</p>
+              <div className="mt-7"><HearSebastian dark /></div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex"><SebastianMark size={120} /></div>
+              <HearWave />
+              <p className="text-[11px] tracking-[.25em] text-white/50 uppercase">Listening · Thinking · Speaking</p>
+            </div>
+          </div>
+        </section>
+
         {/* Trust */}
         <section className="bg-ink text-white">
-          <div className="max-w-6xl mx-auto px-5 py-12 grid md:grid-cols-3 gap-6">
-            {[[Lock, "Private by design", "Your information stays with your account and is never sold or used for advertising."], [Brain, "Remembers what matters", "Sebastian learns your preferences, and you can see, edit or clear what he knows."], [ShieldCheck, "Trusted sources", "News and bookings come from screened, established providers."]].map(([I, t, s]: any) => (
+          <div className="max-w-6xl mx-auto px-5 py-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[[Lock, "Private by design", "Your information stays with your account and is never sold or used for advertising."], [CheckCircle2, "Confirmation before action", "Nothing is sent, booked, bought or paid without your say-so."], [Brain, "Remembers what matters", "Sebastian learns your preferences, and you can see, edit or clear what he knows."], [ShieldCheck, "Trusted sources", "News and bookings come from screened, established providers."]].map(([I, t, s]: any) => (
               <div key={t} className="flex gap-3"><I className="w-5 h-5 text-gold shrink-0 mt-0.5" aria-hidden /><div><p className="font-medium">{t}</p><p className="text-[13.5px] text-white/70 mt-1">{s}</p></div></div>
             ))}
           </div>
@@ -202,12 +218,7 @@ export default function Welcome() {
         </section>
       </main>
 
-      <footer className="border-t border-line">
-        <div className="max-w-6xl mx-auto px-5 py-8 flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted">
-          <span>© {new Date().getFullYear()} {SUPPORT.company.startsWith("[") ? "Sebastian" : SUPPORT.company}</span>
-          <span className="flex gap-4"><Link href="/privacy" className="hover:text-ink">Privacy policy</Link><Link href="/login" className="hover:text-ink">Log in</Link>{LANDING.openSignups && <Link href="/signup" className="hover:text-ink">Sign up</Link>}</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
