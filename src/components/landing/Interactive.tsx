@@ -48,17 +48,53 @@ export function Wave({ playing, dark }: { playing: boolean; dark?: boolean }) {
 
 /* ---------- The butler's tray: services presented one by one as you scroll ---------- */
 const SERVICES = [
-  { icon: MessageCircle, eyebrow: "Conversation", title: ["Tell Sebastian", "anything."], text: "Speak naturally or type. Ask a question, explain a problem, make a plan, or simply say \"Sebastian, help me with this.\"", ex: "\"I have a wedding next Saturday. What should I wear?\"" },
-  { icon: CalendarDays, eyebrow: "Tasks and schedule", title: ["Your day,", "perfectly orchestrated."], text: "Say your week out loud and Sebastian arranges it, spots clashes and reminds you discreetly. He does the groundwork and asks before anything final.", ex: "\"Remind me to buy groceries tomorrow at 5 PM.\"" },
-  { icon: Plane, eyebrow: "Travel", title: ["Travel without", "the planning."], text: "Destinations, day-by-day itineraries, local etiquette, stays and maps, together in one conversation, with nothing booked until you say so.", ex: "\"I'm travelling to Cape Town next Friday. Organise everything.\"" },
-  { icon: UtensilsCrossed, eyebrow: "Food and recipes", title: ["Your private", "chef."], text: "Recipes around what's in your kitchen and how you like to eat, scaled to your table and read aloud while you cook.", ex: "\"I have chicken, rice and tomatoes. What can I make?\"" },
-  { icon: Shirt, eyebrow: "Style", title: ["Always", "appropriately dressed."], text: "Outfit, skincare and hairstyle ideas for the occasion, with inspiration to save.", ex: "\"I have a black-and-gold soirée this Saturday.\"" },
-  { icon: Compass, eyebrow: "Discovery", title: ["Discover what's", "around you."], text: "Restaurants, mechanics, pharmacies and things to do nearby, and in an emergency, the nearest help and the numbers to call.", ex: "\"I have two free hours. Find something interesting nearby.\"" },
-  { icon: Newspaper, eyebrow: "News", title: ["Know what", "matters."], text: "Breaking and local news from screened, trusted sources, with the stories that matter to you first.", ex: "\"Give me today's most important headlines.\"" },
-  { icon: Droplets, eyebrow: "Wellness", title: ["Take better care", "of your day."], text: "Gentle reminders to drink water, move, stretch and take your medication on time.", ex: "\"Remind me to drink water every two hours.\"" },
-  { icon: Repeat, eyebrow: "Subscriptions", title: ["Never miss", "a payment."], text: "ZESA, insurance, Netflix, AI tools and hosting, tracked in one place, with a reminder three days before each one is due.", ex: "\"Track my Netflix and ZESA, and remind me before they're due.\"" },
-  { icon: Brain, eyebrow: "Memory", title: ["Sebastian remembers", "what matters."], text: "He learns your preferences so every conversation starts with him knowing you, and you can see, edit or clear what he remembers.", ex: "\"Remember that I prefer quiet cafés and morning meetings.\"" },
+  { icon: MessageCircle, key: "conversation", photos: ["friends talking over coffee", "woman smiling at phone", "man laughing on phone call", "notebook planning ideas", "couple chatting at home"], eyebrow: "Conversation", title: ["Tell Sebastian", "anything."], text: "Speak naturally or type. Ask a question, explain a problem, make a plan, or simply say \"Sebastian, help me with this.\"", ex: "\"I have a wedding next Saturday. What should I wear?\"" },
+  { icon: CalendarDays, key: "tasks", photos: ["paper planner calendar desk", "alarm clock morning", "grocery shopping basket", "video call meeting laptop", "to do list notebook"], eyebrow: "Tasks and schedule", title: ["Your day,", "perfectly orchestrated."], text: "Say your week out loud and Sebastian arranges it, spots clashes and reminds you discreetly. He does the groundwork and asks before anything final.", ex: "\"Remind me to buy groceries tomorrow at 5 PM.\"" },
+  { icon: Plane, key: "travel", photos: ["Table Mountain Cape Town", "travel selfie beach", "hotel reception check in", "airplane window view clouds", "packing suitcase travel"], eyebrow: "Travel", title: ["Travel without", "the planning."], text: "Destinations, day-by-day itineraries, local etiquette, stays and maps, together in one conversation, with nothing booked until you say so.", ex: "\"I'm travelling to Cape Town next Friday. Organise everything.\"" },
+  { icon: UtensilsCrossed, key: "food", photos: ["sushi platter", "italian pasta dish", "indian curry bowl", "african grilled food plate", "mexican tacos", "french pastries bakery"], eyebrow: "Food and recipes", title: ["Your private", "chef."], text: "Recipes around what's in your kitchen and how you like to eat, scaled to your table and read aloud while you cook.", ex: "\"I have chicken, rice and tomatoes. What can I make?\"" },
+  { icon: Shirt, key: "style", photos: ["woman elegant evening dress", "man tailored suit", "skincare products", "hair salon styling", "stylish shoes"], eyebrow: "Style", title: ["Always", "appropriately dressed."], text: "Outfit, skincare and hairstyle ideas for the occasion, with inspiration to save.", ex: "\"I have a black-and-gold soirée this Saturday.\"" },
+  { icon: Compass, key: "discovery", photos: ["rooftop restaurant evening", "art gallery exhibition", "live music concert crowd", "picnic in the park", "cosy coffee shop interior"], eyebrow: "Discovery", title: ["Discover what's", "around you."], text: "Restaurants, mechanics, pharmacies and things to do nearby, and in an emergency, the nearest help and the numbers to call.", ex: "\"I have two free hours. Find something interesting nearby.\"" },
+  { icon: Newspaper, key: "news", photos: ["reading newspaper coffee", "television news studio", "city skyline morning", "journalist microphone interview", "reading news on tablet"], eyebrow: "News", title: ["Know what", "matters."], text: "Breaking and local news from screened, trusted sources, with the stories that matter to you first.", ex: "\"Give me today's most important headlines.\"" },
+  { icon: Droplets, key: "wellness", photos: ["glass of water", "yoga stretching", "walking outdoors nature", "pill organiser medication", "peaceful bedroom sleep"], eyebrow: "Wellness", title: ["Take better care", "of your day."], text: "Gentle reminders to drink water, move, stretch and take your medication on time.", ex: "\"Remind me to drink water every two hours.\"" },
+  { icon: Repeat, key: "subscriptions", photos: ["paying with phone card", "streaming tv living room", "electricity meter", "car keys insurance", "budget spreadsheet laptop"], eyebrow: "Subscriptions", title: ["Never miss", "a payment."], text: "ZESA, insurance, Netflix, AI tools and hosting, tracked in one place, with a reminder three days before each one is due.", ex: "\"Track my Netflix and ZESA, and remind me before they're due.\"" },
+  { icon: Brain, key: "memory", photos: ["photo album memories", "quiet cafe window seat", "morning coffee notebook", "family dinner table", "handwritten notes"], eyebrow: "Memory", title: ["Sebastian remembers", "what matters."], text: "He learns your preferences so every conversation starts with him knowing you, and you can see, edit or clear what he remembers.", ex: "\"Remember that I prefer quiet cafés and morning meetings.\"" },
 ];
+
+/* Real photos in circular frames, bursting out of the tray in an arc. Your own photos win:
+   /public/images/tray/<service>-<n>.jpg (for example travel-1.jpg); otherwise a photo is found automatically. */
+function TrayPhoto({ k, n, q }: { k: string; n: number; q: string }) {
+  const [stage, setStage] = useState(0);
+  if (stage > 1) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={stage === 0 ? `/images/tray/${k}-${n}.jpg` : `/api/images/photo?q=${encodeURIComponent(q)}`} alt={q} title={q} loading="lazy" onError={() => setStage(stage + 1)} className="w-full h-full object-cover" />;
+}
+function PhotoBurst({ service }: { service: (typeof SERVICES)[number] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => { const el = ref.current?.parentElement; if (!el) return; const ro = new ResizeObserver(() => setW(el.clientWidth)); ro.observe(el); setW(el.clientWidth); return () => ro.disconnect(); }, []);
+  const small = w < 420;
+  const photos = service.photos.slice(0, small ? 3 : service.photos.length);
+  const n = photos.length;
+  const R = w * (small ? 0.42 : 0.38), size = Math.max(small ? 54 : 70, w * (small ? 0.17 : 0.14));
+  const cx = w * 0.61, trayTop = w * 0.02; // the middle of the tray's surface, near the top of the picture
+  const from = small ? 150 : n > 5 ? 172 : 165, to = small ? 30 : n > 5 ? 8 : 15;
+  return (
+    <div ref={ref} aria-hidden className="absolute inset-0 pointer-events-none z-[2]">
+      <style>{`@keyframes sebBurst{from{transform:translate(var(--fx),var(--fy)) scale(.15);opacity:0}to{transform:none;opacity:1}}@keyframes sebFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}@media (prefers-reduced-motion:reduce){.seb-burst{animation:none!important}}`}</style>
+      {w > 0 && photos.map((q, k) => {
+        const a = ((from + ((to - from) * k) / Math.max(1, n - 1)) * Math.PI) / 180;
+        const x = cx + R * Math.cos(a), y = trayTop - R * Math.sin(a) * 0.78 - size * (small ? 1.15 : 0.55);
+        return (
+          <div key={q} className="seb-burst absolute rounded-full overflow-hidden bg-cream border-[3px] border-white shadow-lift"
+            style={{ width: size, height: size, left: x - size / 2, top: y - size / 2, outline: "2px solid rgba(184,130,58,.75)", outlineOffset: 2,
+              ["--fx" as any]: `${cx - x}px`, ["--fy" as any]: `${trayTop - y}px`, animation: `sebBurst .7s cubic-bezier(.2,.9,.25,1.15) ${k * 70}ms both` }}>
+            <TrayPhoto k={service.key} n={k + 1} q={q} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function TrayStory() {
   const ref = useRef<HTMLElement>(null);
@@ -81,8 +117,9 @@ export function TrayStory() {
         {/* the butler's hand and tray, presenting each service */}
         <div className="absolute left-0 bottom-[4vh] w-[78vw] sm:w-[60vw] lg:w-[46vw] max-w-[680px] z-[2]">
           <div className="relative">
-            <div key={i} className="absolute left-[46%] -translate-x-1/2 bottom-[94%] animate-fadeUp">
-              <div className="flex items-center gap-2.5 rounded-2xl bg-canvas border border-cream-line shadow-lift px-4 py-3">
+            <PhotoBurst key={`burst-${i}`} service={s} />
+            <div key={i} className="absolute left-[61%] bottom-[112%] sm:bottom-[122%] z-[3]" style={{ animation: "sebFloat 3.2s ease-in-out infinite", transform: "translateX(-50%)" }}>
+              <div className="flex items-center gap-2.5 rounded-2xl bg-canvas border border-cream-line shadow-lift px-4 py-3 animate-fadeUp">
                 <span className="w-10 h-10 rounded-full bg-ink inline-flex items-center justify-center"><s.icon className="w-5 h-5 text-[#E6C98F]" aria-hidden /></span>
                 <span className="font-serif text-[18px] whitespace-nowrap">{s.eyebrow}</span>
               </div>
