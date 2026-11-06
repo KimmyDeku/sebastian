@@ -1,4 +1,5 @@
 import { db, push, pushReady } from "@/lib/server/push";
+import { sendDueEmails } from "@/lib/server/notify";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -7,7 +8,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const key = url.searchParams.get("key") || (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!process.env.CRON_SECRET || key !== process.env.CRON_SECRET) return Response.json({ ok: false, error: "Not allowed." }, { status: 401 });
-  if (!pushReady()) return Response.json({ ok: false, error: "Push isn't configured." }, { status: 503 });
+  // Reminder emails first: they work even when push notifications aren't set up.
+  const emails = process.env.SUPABASE_SERVICE_ROLE_KEY ? await sendDueEmails().catch((e) => ({ ok: false, error: String(e?.message || e), sent: 0 })) : { ok: false, error: "No SUPABASE_SERVICE_ROLE_KEY", sent: 0 };
+  if (!pushReady()) return Response.json({ ok: emails.ok, push: "Push isn't configured.", emails });
   const c = db();
   const { data: jobs, error } = await c.from("push_jobs").select("endpoint,id,fire_at").eq("sent", false).lte("fire_at", new Date().toISOString()).limit(500);
   if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
@@ -32,5 +35,5 @@ export async function GET(req: Request) {
   }
   // Tidy up reminders sent more than two days ago.
   await c.from("push_jobs").delete().eq("sent", true).lt("fire_at", new Date(Date.now() - 2 * 86400000).toISOString());
-  return Response.json({ ok: true, due: jobs?.length || 0, sent, removedDevices: gone });
+  return Response.json({ ok: true, due: jobs?.length || 0, sent, removedDevices: gone, emails });
 }

@@ -10,6 +10,7 @@ import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
 import { AtSign, Sunrise } from "lucide-react";
 import { BriefingControls } from "@/components/briefing/BriefingControls";
+import { EmailNotifySettings } from "@/components/EmailNotifySettings";
 import { useBriefingSettings } from "@/lib/briefing";
 import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
@@ -454,6 +455,7 @@ export default function Settings() {
               <Button size="sm" variant="ghost" disabled={!pushOn} onClick={async () => { try { await testPush(); toast.info("Test sent. It should arrive in a few seconds."); } catch (e: any) { toast.error(e.message); } }}>Test</Button>
             </div>
           </div>
+          <EmailNotifySettings />
           <div className="border-t border-line" />
           <Toggle label="Learn my travel preferences (Trip DNA)" desc="Saved trips shape destination recommendations." on={d.prefs.personalization} set={(v) => actions.setPrefs({ personalization: v })} />
           <div className="pb-2"><Button size="sm" variant="outline" onClick={() => { actions.resetTripDNA(); toast.info("Trip DNA cleared."); }}>Reset Trip DNA</Button></div>

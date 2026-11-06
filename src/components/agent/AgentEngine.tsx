@@ -7,6 +7,7 @@ import { allSubs, money } from "@/lib/subscriptions";
 import { refreshRecs } from "@/lib/recommend";
 import { refreshGoogle, findClashes, type Clash } from "@/lib/clash";
 import { briefingSettings, buildBriefing, localDate } from "@/lib/briefing";
+import { emailNow } from "@/lib/emailNotify";
 import { alertPhrase } from "@/lib/alertPhrase";
 import { playChime } from "@/lib/sound";
 import { pushNotify } from "@/lib/notify";
@@ -57,6 +58,8 @@ async function checkClashes() {
   for (const c of findClashes(14)) {
     if (seen(c.key)) continue;
     mark(c.key);
+    const at = (x: any) => new Date(x.start).toLocaleString("en-GB", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    emailNow("needs", c.key, `Two of your plans overlap: ${c.a.title} and ${c.b.title}`, { title: "Two of your plans overlap", intro: "Shall I move one? Open your calendar and I'll help you choose a new time.", lines: [`${c.a.title}: ${at(c.a)}`, `${c.b.title}: ${at(c.b)}`], url: "/schedule?tab=calendar", button: "Sort it out" }).catch(() => {});
     if (document.visibilityState === "visible") window.dispatchEvent(new CustomEvent("sebastian-clash", { detail: c }));
     else { waiting.push(c); alert("Two of your plans overlap."); }
   }
@@ -75,6 +78,7 @@ function checkSubscriptions() {
     if (seen(key)) continue;
     mark(key);
     alert(`Payment due: ${s.name}.`);
+    emailNow("needs", key, `Payment due: ${s.name} (${money(s.amount, s.currency)})`, { title: `${s.name} is due${s.nextDue < today ? " (overdue)" : " today"}`, intro: `${money(s.amount, s.currency)}, due ${new Date(`${s.nextDue}T09:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}. Once you've paid, mark it as paid in Sebastian and I'll schedule the next reminder.`, url: s.payLink || "/finance?tab=subs", button: s.payLink ? "Pay now" : "Open Subscriptions" }).catch(() => {});
     startTask(s.name, "sebastian", { title: `Payment due: ${s.name}`, steps: [
       { label: `${s.name}: ${money(s.amount, s.currency)} is due${s.nextDue < today ? " (overdue)" : " today"}`, tool: "info", args: { text: `${s.name} (${money(s.amount, s.currency)}) was due on ${new Date(`${s.nextDue}T09:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}.` }, critical: false },
       ...(s.payLink ? [{ label: `Open ${new URL(s.payLink).hostname} to pay`, tool: "open_link", args: { url: s.payLink }, critical: true, why: "You complete the payment yourself; Sebastian never enters card details." }] : []),
@@ -96,6 +100,9 @@ async function dailyBriefing() {
   try {
     const b = await buildBriefing();
     if (!b) return;
+    emailNow("briefing", `brief_${today}`, `${b.greeting} Your daily briefing`, { title: b.greeting, intro: b.narration,
+      lines: [...b.focus.map((f, i) => `Focus ${i + 1}: ${f}`), ...b.sections.filter((x) => x.title !== "News for you").flatMap((x) => x.items.slice(0, 3).map((it) => `${x.title}: ${it.text}`))].slice(0, 14),
+      url: "/briefing?play=1", button: "Hear your briefing" }, `brief_${today}`).catch(() => {});
     if (document.visibilityState === "visible") { alert("Your daily briefing is ready."); window.dispatchEvent(new Event("sebastian-briefing-ready")); }
     else pushNotify("Sebastian", "Your daily briefing is ready.", { tag: "sebastian-briefing", url: "/briefing?play=1" });
   } finally { briefingBusy = false; }
@@ -106,7 +113,12 @@ async function suggestions() {
   const now = new Date(); const today = now.toISOString().slice(0, 10);
   if (now.getHours() < 18 || (getAgentMeta() as any).lastSuggest === today) return;
   patchAgentMeta((m) => ({ ...m, lastSuggest: today } as any));
-  if (await refreshRecs(true)) alert("I've found a few things you might enjoy. Have a look in For you.");
+  if (await refreshRecs(true)) {
+    alert("I've found a few things you might enjoy. Have a look in For you.");
+    const { d } = state(); const items: any[] = d?.recs?.items || [];
+    if (items.length) emailNow("finds", `recs_${today}`, "Sebastian found a few things for you", { title: "A few things you might enjoy", intro: "Chosen from what I've learned you like.",
+      lines: [...items.slice(0, 6).map((i) => `${i.title}: ${i.why}`), ...((d?.recs?.news || []).slice(0, 3).map((n: any) => `In the news: ${n.title} (${n.source})`))], url: "/for-you", button: "See them" }).catch(() => {});
+  }
 }
 
 function briefing() {
@@ -134,7 +146,10 @@ export function AgentEngine() {
   const voiceName = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.prefs?.voiceName : undefined));
   const { speak } = useSpeaker();
   useEffect(() => { say = (t) => speak(t, voiceName); return () => { say = null; }; }, [speak, voiceName]);
-  useEffect(() => { const off = onApprovalNeeded((t, s) => { if (t.source !== "sebastian") alert(`Sebastian needs your approval: ${s.label}`); }); return () => { off(); }; }, []);
+  useEffect(() => { const off = onApprovalNeeded((t, s) => {
+    if (t.source !== "sebastian") alert(`Sebastian needs your approval: ${s.label}`);
+    if (document.visibilityState !== "visible") emailNow("needs", `appr_${t.id}_${s.id}`, `Sebastian needs your approval: ${s.label}`, { title: "Sebastian needs your approval", intro: `For "${t.title}", I'd like to: ${s.label}.${s.why ? ` ${s.why}` : ""}`, url: "/?tasks=1", button: "Review it" }).catch(() => {});
+  }); return () => { off(); }; }, []);
   useEffect(() => {
     if (!session) return;
     const KEY = "sebastian-routines-last";

@@ -27,6 +27,7 @@ import { WhatsNew } from "../WhatsNew";
 import { ClashDialog } from "../schedule/ClashDialog";
 import { BriefingPrompt } from "../briefing/BriefingPrompt";
 import { briefingJob } from "@/lib/briefing";
+import { syncEmailJobs } from "@/lib/emailNotify";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
@@ -63,6 +64,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const prefs = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.prefs : undefined));
   const routines = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.routines : undefined));
   const briefingCfg = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.briefingSettings : undefined));
+  const emailCfg = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.emailNotify : undefined));
+  // Reminder emails: re-sync a few seconds after anything changes, and every few hours (routines roll forward).
+  useEffect(() => {
+    if (!schedule) return;
+    const t = setTimeout(() => { syncEmailJobs().catch(() => {}); }, 4000);
+    const iv = setInterval(() => { syncEmailJobs().catch(() => {}); }, 3 * 3600e3);
+    return () => { clearTimeout(t); clearInterval(iv); };
+  }, [schedule, routines, briefingCfg, emailCfg]);
   useEffect(() => {
     if (!schedule) return;
     const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, [...routineJobs(routines || []), recJob(), ...briefingJob()]), 2500);
