@@ -24,6 +24,7 @@ import { CompanionBridge } from "../CompanionBridge";
 import { Onboarding } from "../Onboarding";
 import { TrialGate } from "../TrialGate";
 import { WhatsNew } from "../WhatsNew";
+import { ClashDialog } from "../schedule/ClashDialog";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
@@ -134,6 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Onboarding />
       <TrialGate />
       <WhatsNew />
+      <ClashDialog />
       <AgentEngine />
       <TaskDock />
       <VoiceLauncher />

@@ -5,6 +5,7 @@ import { onApprovalNeeded, startTask, getAgentMeta, patchAgentMeta } from "@/lib
 import { allRoutines, occurrences, type Routine } from "@/lib/routines";
 import { allSubs, money } from "@/lib/subscriptions";
 import { refreshRecs } from "@/lib/recommend";
+import { refreshGoogle, findClashes, type Clash } from "@/lib/clash";
 import { alertPhrase } from "@/lib/alertPhrase";
 import { playChime } from "@/lib/sound";
 import { pushNotify } from "@/lib/notify";
@@ -47,27 +48,22 @@ function fireRoutine(r: Routine, when: "due" | "soon") {
   if (r.kind === "custom") return;
 }
 
-function checkClashes() {
+/** Clashes across Sebastian's schedule and Google Calendar: Sebastian says so and offers to move one. */
+const waiting: Clash[] = [];
+async function checkClashes() {
   const { d } = state(); if (!d) return;
-  const now = Date.now(), horizon = now + 14 * 86400e3;
-  const evs = (d.schedule || []).filter((e: any) => { const t = new Date(e.start).getTime(); return t > now && t < horizon && !["trip", "booking"].includes(e.kind); })
-    .map((e: any) => ({ ...e, s: new Date(e.start).getTime(), e: e.end ? new Date(e.end).getTime() : new Date(e.start).getTime() + 3600e3 })).sort((a: any, b: any) => a.s - b.s);
-  for (let i = 0; i + 1 < evs.length; i++) {
-    const a = evs[i], b = evs[i + 1];
-    if (b.s >= a.e || b.e - b.s > 12 * 3600e3) continue;
-    const key = `clash:${a.id}:${b.id}:${a.start}:${b.start}`;
-    if (seen(key)) continue;
-    mark(key);
-    // the next free slot after the first event, on the same day
-    let next = a.e; for (const e of evs) if (e.id !== b.id && e.s < next + (b.e - b.s) && e.e > next) next = e.e;
-    const nd = new Date(next); const local = new Date(nd.getTime() - nd.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    const when = (t: number) => new Date(t).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-    alert("Two of your plans overlap. I've suggested a fix in Tasks.");
-    startTask("schedule clash", "sebastian", { title: `Clash: ${a.title} and ${b.title}`, steps: [
-      { label: `${a.title} (${when(a.s)}) overlaps ${b.title} (${when(b.s)})`, tool: "info", args: { text: `"${a.title}" and "${b.title}" overlap on ${new Date(a.s).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}. I suggest moving "${b.title}" to straight after, at ${nd.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. You can choose another time below.` }, critical: false },
-      { label: `Move ${b.title} to ${when(next)}`, tool: "reschedule_event", args: { eventId: b.id, newStart: local, title: b.title }, critical: true, why: "Please also let anyone involved know about the new time." } ] });
+  await refreshGoogle().catch(() => null);
+  for (const c of findClashes(14)) {
+    if (seen(c.key)) continue;
+    mark(c.key);
+    if (document.visibilityState === "visible") window.dispatchEvent(new CustomEvent("sebastian-clash", { detail: c }));
+    else { waiting.push(c); alert("Two of your plans overlap."); }
   }
 }
+if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  while (waiting.length) window.dispatchEvent(new CustomEvent("sebastian-clash", { detail: waiting.shift() }));
+});
 
 /** On (or after) each due date, a task to pay and then record the payment, both waiting for approval. */
 function checkSubscriptions() {
@@ -114,6 +110,8 @@ function briefing() {
 /** Sebastian keeps watch: routines, clashes and a daily look-ahead, and asks for approval when needed. */
 export function AgentEngine() {
   const session = useStore((s) => s.sessionId);
+  const schedule = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.schedule : null));
+  useEffect(() => { if (!schedule) return; const t = setTimeout(() => { checkClashes().catch(() => {}); }, 3000); return () => clearTimeout(t); }, [schedule]);
   const voiceName = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.prefs?.voiceName : undefined));
   const { speak } = useSpeaker();
   useEffect(() => { say = (t) => speak(t, voiceName); return () => { say = null; }; }, [speak, voiceName]);

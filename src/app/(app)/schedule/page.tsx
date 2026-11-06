@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { CalendarPlus, Download, Pencil, Trash2, Plus, Bell, BedDouble, Plane, User } from "lucide-react";
 import { Container, PageHeader } from "@/components/ui/Page";
 import { PlanMyTime } from "@/components/schedule/PlanMyTime";
-import { VictorianCalendar } from "@/components/schedule/VictorianCalendar";
+import { MonoCalendar } from "@/components/schedule/MonoCalendar";
 import { RoutinesPanel } from "@/components/schedule/RoutinesPanel";
 import { WizardCard } from "@/components/ui/Wizard";
 import { Option, inputCls, textareaCls } from "@/components/ui/Chip";
@@ -27,6 +27,7 @@ function ScheduleInner() {
   const d = useData();
   const tz = acc?.timezone;
   const [wiz, setWiz] = useState(false);
+  const [section, setSection] = useState<"plan" | "calendar" | "routines">(() => { const t = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null; return t === "calendar" || t === "routines" ? t : "plan"; });
   const [step, setStep] = useState(1);
   const [editId, setEditId] = useState<string | null>(null);
   const [kind, setKind] = useState<EventKind>("appointment");
@@ -87,12 +88,17 @@ function ScheduleInner() {
         right={!wiz && <Button onClick={() => { reset(); setWiz(true); }}><Plus className="w-4 h-4" />Schedule</Button>} />
 
       {!wiz && (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-6 items-start mb-8">
-          <PlanMyTime />
-          <VictorianCalendar events={d.schedule} />
+        <div className="mb-8">
+          <div className="inline-flex rounded-pill bg-paper border border-line p-1 mb-6" role="tablist" aria-label="Schedule">
+            {([["plan", "Plan my time"], ["calendar", "Calendar"], ["routines", "Routines"]] as const).map(([k, l]) => (
+              <button key={k} role="tab" aria-selected={section === k} onClick={() => setSection(k)} className={cx("h-10 px-5 rounded-pill text-[14px] transition-colors", section === k ? "bg-ink text-white" : "text-muted hover:text-ink")}>{l}</button>
+            ))}
+          </div>
+          {section === "plan" && <div className="max-w-2xl"><PlanMyTime /></div>}
+          {section === "calendar" && <MonoCalendar />}
+          {section === "routines" && <RoutinesPanel />}
         </div>
       )}
-      {!wiz && <div className="mb-8"><RoutinesPanel /></div>}
 
       {wiz && (
         <div className="max-w-2xl">
@@ -133,7 +139,7 @@ function ScheduleInner() {
         </div>
       )}
 
-      {!wiz && (
+      {!wiz && section !== "calendar" && (
         <>
           {perm === "default" && <Notice tone="permission" className="mb-6" action={<Button size="sm" variant="outline" onClick={() => Notification.requestPermission().then(setPerm)}><Bell className="w-4 h-4" />Allow</Button>}>Allow notifications so I can remind you even when this tab is in the background. Otherwise I&apos;ll remind you here in the app.</Notice>}
           {perm === "denied" && <Notice tone="permission" className="mb-6">Browser notifications are blocked, so reminders will appear inside Sebastian while it&apos;s open.</Notice>}
