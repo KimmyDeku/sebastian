@@ -120,7 +120,7 @@ export function Inspiration({ dest, data, loading, interests, mustSee, onToggleM
             return (
               <article key={s.id} className={cx(card, "w-56 h-[290px] flex flex-col", on && "border-ink")}>
                 <div className="relative">
-                  <Img src={s.photo} alt={s.name} label="" className="w-full h-40" />
+                  <Img src={s.photo} place={{ name: s.name, near: city }} alt={s.name} label="" className="w-full h-40" />
                   <button onClick={() => onToggleMustSee(s.name)} aria-pressed={on} aria-label={on ? `Remove ${s.name} from your must-sees` : `Add ${s.name} to your must-sees`} title={on ? "In your plan" : "Add to your must-sees"}
                     className={cx("absolute top-2.5 right-2.5 w-10 h-10 rounded-full inline-flex items-center justify-center shadow-lift transition-colors", on ? "bg-ink text-white" : "bg-white text-ink hover:bg-cream")}>
                     {on ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}

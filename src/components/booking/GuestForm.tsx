@@ -123,7 +123,7 @@ export function GuestForm({ type, item, search, summary, onBack }: { type: strin
       <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start">
         <aside className="space-y-4 lg:sticky lg:top-6">
           <div className="rounded-2xl bg-paper border border-line overflow-hidden">
-            <Img src={item.photo} alt={item.name} label="Photo unavailable" className="w-full h-40" />
+            <Img src={item.photo} place={{ name: item.name }} alt={item.name} label="Photo unavailable" className="w-full h-40" />
             <div className="p-4">
               <p className="text-[11px] text-muted">{item.kind}</p>
               <h2 className="font-medium text-[15px]">{item.name}</h2>

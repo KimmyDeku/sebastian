@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Plus, LogOut, ChevronRight, Trash2 } from "lucide-react";
 import { Wordmark } from "../SebastianMark";
 import { PRIMARY, SUITES } from "./nav";
+import { useNewRecs } from "@/lib/recommend";
 import { useData, useStore, actions } from "@/lib/store";
 import { cx, relTime } from "@/lib/util";
 import { useState } from "react";
@@ -23,6 +24,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [confirmOut, setConfirmOut] = useState(false);
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
 
+  const newRecs = useNewRecs();
   return (
     <div className="flex flex-col h-full">
       <Link href="/" onClick={onNavigate} className="px-2 pt-1" aria-label="Sebastian home"><Wordmark /></Link>
@@ -36,6 +38,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             className={cx("flex items-center gap-4 h-12 px-4 rounded-2xl text-[15px] transition-colors", active(n.href) ? "bg-cream text-ink" : "text-ink hover:bg-cream/50")}>
             <n.icon className={cx("w-5 h-5", active(n.href) ? "text-gold" : "text-ink")} strokeWidth={1.6} aria-hidden />
             <span className="flex-1">{n.label}</span>
+            {n.badge === "recs" && newRecs && <span className="w-2.5 h-2.5 rounded-full bg-[#22A55B] ring-2 ring-paper" aria-label="New suggestions" title="Sebastian found new things for you" />}
             {n.badge === "schedule" && count > 0 && <span className="min-w-6 h-6 px-2 rounded-full bg-gold text-white text-[11px] font-medium inline-flex items-center justify-center" aria-label={`${count} scheduled`}>{count}</span>}
           </Link>
         ))}

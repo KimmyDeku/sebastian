@@ -7,7 +7,7 @@ import { Container, PageHeader } from "@/components/ui/Page";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/States";
 import { Verified } from "@/components/news/Verified";
-import { useRecs, refreshRecs, feedback, type Rec } from "@/lib/recommend";
+import { useRecs, refreshRecs, feedback, markRecsSeen, type Rec } from "@/lib/recommend";
 import { startTask } from "@/lib/agent";
 import { relTime } from "@/lib/util";
 import { toast } from "@/components/ui/Toast";
@@ -20,6 +20,8 @@ export default function ForYou() {
   const [busy, setBusy] = useState(false);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   useEffect(() => { if (!recs.items.length && !recs.date) { setBusy(true); refreshRecs().finally(() => setBusy(false)); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Opening For you clears the green dot (including for suggestions that arrive while it's open).
+  useEffect(() => { markRecsSeen(); }, [recs.at]);
 
   const act = (r: Rec) => {
     if (r.type === "recipe") router.push(`/recipes?category=Dinner&notes=${encodeURIComponent(`Recipe idea: ${r.query}`)}`);

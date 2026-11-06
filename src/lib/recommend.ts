@@ -5,7 +5,7 @@ import { memoryForPrompt } from "./memory";
 import { uid } from "./util";
 
 export type Rec = { id: string; type: "recipe" | "destination" | "activity" | "event"; title: string; why: string; query: string };
-export type RecState = { date?: string; at?: string; items: Rec[]; news: { title: string; link: string; source: string; published?: string }[]; liked: string[]; disliked: string[] };
+export type RecState = { date?: string; at?: string; seenAt?: string; items: Rec[]; news: { title: string; link: string; source: string; published?: string }[]; liked: string[]; disliked: string[] };
 const EMPTY: RecState = { items: [], news: [], liked: [], disliked: [] };
 export function useRecs(): RecState { return useStore((s) => ((s.sessionId ? (s.data[s.sessionId] as any)?.recs : null) as RecState) || EMPTY); }
 const get = (): RecState => { const s = useStore.getState(); return { ...EMPTY, ...(((s.sessionId ? (s.data[s.sessionId] as any)?.recs : null) as RecState) || {}) }; };
@@ -49,3 +49,9 @@ export function recJob() {
   const n = new Date(); const t = new Date(n); t.setHours(18, 0, 0, 0); if (t <= n) t.setDate(t.getDate() + 1);
   return { id: `rec_${t.getFullYear()}${String(t.getMonth() + 1).padStart(2, "0")}${String(t.getDate()).padStart(2, "0")}`, fireAt: t.toISOString() };
 }
+
+/** Whether Sebastian has found suggestions the user hasn't looked at yet (for the green dot on For you). */
+export function useNewRecs(): boolean {
+  return useStore((s) => { const r: any = s.sessionId ? (s.data[s.sessionId] as any)?.recs : null; return !!(r?.items?.length && r.at && (!r.seenAt || r.at > r.seenAt)); });
+}
+export const markRecsSeen = () => set((x) => ({ ...x, seenAt: new Date().toISOString() }));

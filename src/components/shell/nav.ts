@@ -16,7 +16,7 @@ export const PRIMARY = [
   { label: "News", href: "/news", icon: Newspaper },
   { label: "Your schedule", href: "/schedule", icon: CalendarDays, badge: "schedule" as const },
   { label: "Daily briefing", href: "/briefing", icon: Sunrise },
-  { label: "For you", href: "/for-you", icon: Sparkles },
+  { label: "For you", href: "/for-you", icon: Sparkles, badge: "recs" as const },
   { label: "Your apps", href: "/apps", icon: LayoutGrid },
 ];
 
