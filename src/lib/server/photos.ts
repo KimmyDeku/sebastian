@@ -81,3 +81,37 @@ export async function findDishPhoto(dish: string): Promise<Photo | null> {
   }
   return null;
 }
+
+/* ---------- A photo of a kind of thing ("cinema", "dessert"), varied by seed ---------- */
+const topicCache = new Map<string, { list: Photo[]; at: number }>();
+async function topicList(topic: string): Promise<Photo[]> {
+  const k = topic.toLowerCase();
+  const hit = topicCache.get(k);
+  if (hit && Date.now() - hit.at < 7 * 86400e3) return hit.list;
+  let list: Photo[] = [];
+  const key = process.env.UNSPLASH_ACCESS_KEY;
+  if (key) {
+    try {
+      const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(topic)}&per_page=20&orientation=landscape&content_filter=high`, { headers: { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" }, signal: AbortSignal.timeout(6000) });
+      if (r.ok) list = ((await r.json()).results || []).map((p: any) => ({ url: p.urls?.regular, credit: `Photo by ${p.user?.name || "an Unsplash photographer"} on Unsplash`, link: `${p.user?.links?.html || "https://unsplash.com"}?${UTM}`, source: "unsplash" as const, dl: p.links?.download_location }));
+    } catch {}
+  }
+  if (!list.length) {
+    try {
+      const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(topic)}&license=cc0,pdm&page_size=20&mature=false&extension=jpg&aspect_ratio=wide`, { headers: { "user-agent": "SebastianAI/1.0" }, signal: AbortSignal.timeout(7000) });
+      if (r.ok) list = ((await r.json()).results || []).filter((p: any) => p.url).map((p: any) => ({ url: p.thumbnail || p.url, credit: `Public-domain photo${p.creator ? ` by ${p.creator}` : ""} via Openverse`, link: p.foreign_landing_url, source: "openverse" as const }));
+    } catch {}
+  }
+  list = list.filter((p) => p.url);
+  if (list.length) topicCache.set(k, { list, at: Date.now() });
+  return list;
+}
+const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return Math.abs(h); };
+/** A real photo of a kind of thing, different for each seed (so neighbouring cards don't repeat). */
+export async function findTopicPhoto(topic: string, seed = ""): Promise<Photo | null> {
+  const list = await topicList(topic);
+  if (!list.length) return null;
+  const p: any = list[hash(seed || topic) % list.length];
+  if (p.dl && process.env.UNSPLASH_ACCESS_KEY) fetch(`${p.dl}${p.dl.includes("?") ? "&" : "?"}client_id=${process.env.UNSPLASH_ACCESS_KEY}`).catch(() => {});
+  return { url: p.url, credit: p.credit, link: p.link, source: p.source };
+}

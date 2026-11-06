@@ -7,7 +7,7 @@ import { cx } from "@/lib/util";
  * Pass `food` to look up a real photo of a dish when there's no image, and `place` (a name and,
  * ideally, the town) to find a good photo of a place when its own photo is missing or won't load.
  */
-export function Img({ src, fallback, food, place, alt, className, label }: { src?: string; fallback?: string; food?: string; place?: { name: string; near?: string }; alt: string; className?: string; label?: string }) {
+export function Img({ src, fallback, food, place, generic, alt, className, label }: { src?: string; fallback?: string; food?: string; place?: { name: string; near?: string }; generic?: { topic: string; seed?: string }; alt: string; className?: string; label?: string }) {
   const [found, setFound] = useState<string | undefined>();
   const [placeHit, setPlaceHit] = useState<{ url: string; credit?: string } | null>(null);
   const [failed, setFailed] = useState<string[]>([]);
@@ -25,12 +25,14 @@ export function Img({ src, fallback, food, place, alt, className, label }: { src
     placePhoto(place.name, place.near).then((p) => { if (!dead && p) setPlaceHit(p); });
     return () => { dead = true; };
   }, [needPlace, place?.name, place?.near]); // eslint-disable-line react-hooks/exhaustive-deps
-  const chain = [src, placeHit?.url, found, fallback].filter(Boolean) as string[];
+  // Last resort before a blank: a real photo of that kind of thing (a cinema, a dessert), varied by seed.
+  const genericUrl = generic?.topic ? `/api/images/generic?topic=${encodeURIComponent(generic.topic)}&seed=${encodeURIComponent(generic.seed || alt)}` : undefined;
+  const chain = [src, placeHit?.url, found, fallback, genericUrl].filter(Boolean) as string[];
   const current = chain.find((u) => !failed.includes(u));
   if (!current)
     return (
       <div className={cx("img-fallback flex items-center justify-center", className)} role="img" aria-label={alt}>
-        {label !== "" && <span className="font-serif italic text-muted-soft text-sm px-4 text-center">{label || "Image unavailable"}</span>}
+        {label !== "" && !generic && <span className="font-serif italic text-muted-soft text-sm px-4 text-center">{label || "Image unavailable"}</span>}
       </div>
     );
   // eslint-disable-next-line @next/next/no-img-element

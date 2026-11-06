@@ -3,7 +3,8 @@ import { useState } from "react";
 import { ExternalLink, Minus, Plus, ChefHat, BookmarkPlus, BookmarkCheck, Sparkles } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
-import { Img } from "../ui/Img";
+import { youtubeThumb, foodTopic } from "@/lib/media";
+import { Img, foodCredit } from "../ui/Img";
 import { Notice } from "../ui/States";
 import { scaleIngredient } from "@/lib/scale";
 import type { Recipe } from "@/lib/types";
@@ -22,8 +23,8 @@ export function RecipeDetail({ r: raw, initialServings, saved, onToggle, onClose
       <Modal open={!!r && !chef} onClose={onClose} title={r.title} wide>
         <div className="grid md:grid-cols-[1fr_1.1fr] gap-7">
           <div>
-            <Img src={r.image} food={r.title} alt={r.title} label="Photo unavailable" className="w-full aspect-[4/3] rounded-2xl" />
-            {!r.image && <p className="text-[11px] text-muted mt-1.5">Photo of a similar dish, from an openly licensed photo library.</p>}
+            <Img src={r.image || youtubeThumb(r.url)} food={r.title} generic={{ topic: foodTopic(r), seed: r.id }} alt={r.title} label="" className="w-full aspect-[4/3] rounded-2xl" />
+            {!r.image && <p className="text-[11px] text-muted mt-1.5">Photo of a similar dish{foodCredit(r.title) ? `. ${foodCredit(r.title)}` : ", from a free photo library"}.</p>}
             <p className="text-xs text-muted mt-3 flex items-center gap-1.5">{r.generated && <Sparkles className="w-3 h-3 text-glow" aria-hidden />}{r.source}{r.totalTime ? ` · ${r.totalTime}` : ""}</p>
             {r.generated && <Notice tone="ai" className="mt-3">This recipe was written by Sebastian rather than retrieved from a recipe site. Check quantities and cooking times as you go.</Notice>}
             {r.summary && <p className="text-sm text-muted mt-4 leading-relaxed">{r.summary}</p>}

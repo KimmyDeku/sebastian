@@ -22,7 +22,7 @@ export function PlaceBody({ p, fav }: { p: any; fav: boolean }) {
 }
 
 /** Tinder-style deck for mobile. Buttons provide the accessible alternative to swiping. */
-export function SwipeDeck({ items, favs, onFav, onGo, fallbackImg }: { items: any[]; favs: Set<string>; onFav: (p: any) => void; onGo: (p: any) => void; fallbackImg: string }) {
+export function SwipeDeck({ items, favs, onFav, onGo, fallbackImg, topic }: { items: any[]; favs: Set<string>; onFav: (p: any) => void; onGo: (p: any) => void; fallbackImg: string; topic?: string }) {
   const [i, setI] = useState(0);
   const [dx, setDx] = useState(0);
   const start = useRef<number | null>(null);
@@ -50,7 +50,7 @@ export function SwipeDeck({ items, favs, onFav, onGo, fallbackImg }: { items: an
           onPointerDown={(e) => { start.current = e.clientX; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }}
           onPointerMove={(e) => start.current != null && setDx(e.clientX - start.current)}
           onPointerUp={release} onPointerCancel={release} aria-label={p.name}>
-          <Img src={p.photo} place={{ name: p.name, near: String(p.address || "").split(",").map((x: string) => x.replace(/\d+/g, "").trim()).filter(Boolean).slice(-2, -1)[0] || "" }} fallback={fallbackImg || undefined} alt={p.name} label="" className="w-full h-60 pointer-events-none" />
+          <Img src={p.photo} place={{ name: p.name, near: String(p.address || "").split(",").map((x: string) => x.replace(/\d+/g, "").trim()).filter(Boolean).slice(-2, -1)[0] || "" }} fallback={fallbackImg || undefined} generic={{ topic: topic || p.category || "city place", seed: p.id || p.name }} alt={p.name} label="" className="w-full h-60 pointer-events-none" />
           {!p.photo && <span className="absolute top-3 left-3 text-[10px] bg-white/90 rounded-full px-2 py-0.5">Illustrative photo</span>}
           <PlaceBody p={p} fav={favs.has(p.id)} />
           <span className={cx("absolute top-6 right-6 rounded-xl border-2 px-3 py-1 font-medium rotate-12 transition-opacity", dx > 40 ? "opacity-100 border-success text-success" : "opacity-0")}>GO</span>

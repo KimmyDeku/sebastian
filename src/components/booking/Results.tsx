@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Heart, MapPin, Star, LayoutGrid, List, SlidersHorizontal, RefreshCw, ExternalLink, Sparkles } from "lucide-react";
 import { Img } from "../ui/Img";
+import { bookingTopic } from "@/lib/media";
 import { GoogleMap } from "../GoogleMap";
 import { Button } from "../ui/Button";
 import { Notice, Skeleton, EmptyState } from "../ui/States";
@@ -134,7 +135,7 @@ export function Results({ type, where, res, loading, onPick, onRefresh, fallback
           {shown.map((it, i) => (
             <article key={it.id} className={cx("bg-paper rounded-2xl border border-line overflow-hidden flex hover:border-cream-line transition-colors", view === "grid" ? "flex-col" : "flex-col sm:flex-row")}>
               <div className={cx("relative shrink-0", view === "list" && "sm:w-64")}>
-                <Img src={it.photo || it.ta?.photo} place={{ name: it.name, near: String(where || "").split(",")[0] }} fallback={fallbackImg[i % fallbackImg.length]} alt={it.name} label="" className={cx("w-full", view === "grid" ? "h-48" : "h-48 sm:h-full")} />
+                <Img src={it.photo || it.ta?.photo} place={{ name: it.name, near: String(where || "").split(",")[0] }} fallback={fallbackImg[i % fallbackImg.length]} generic={{ topic: bookingTopic(type), seed: it.id || it.name }} alt={it.name} label="" className={cx("w-full", view === "grid" ? "h-48" : "h-48 sm:h-full")} />
                 {!it.photo && !it.ta?.photo && <span className="absolute bottom-2 left-2 text-[10px] bg-white/90 text-ink rounded-full px-2 py-0.5">Illustrative photo</span>}
                 {placeLike && <button onClick={() => save(it)} aria-pressed={saved.has(it.id)} aria-label={saved.has(it.id) ? "Remove from saved" : "Save"} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 shadow-soft inline-flex items-center justify-center"><Heart className={cx("w-4 h-4 text-gold", saved.has(it.id) && "fill-gold")} /></button>}
               </div>

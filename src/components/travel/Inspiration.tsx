@@ -49,7 +49,7 @@ export function Inspiration({ dest, data, loading, interests, mustSee, onToggleM
           {loading && Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="shrink-0 w-52 h-[340px]" />)}
           {data?.overview && (
             <article className={cx(card, "w-64 h-[340px]")}>
-              <Img src={data.overview.image} alt={dest} label="" className="absolute inset-0 w-full h-full" />
+              <Img src={data.overview.image} place={{ name: city, near: dest.split(",").slice(1).join(",").trim() }} generic={{ topic: "travel destination city", seed: dest }} alt={dest} label="" className="absolute inset-0 w-full h-full" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" aria-hidden />
               <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                 <p className="font-serif text-xl leading-tight">{city}</p>
@@ -65,7 +65,7 @@ export function Inspiration({ dest, data, loading, interests, mustSee, onToggleM
                 <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${r.id}?autoplay=1`} title={r.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
               ) : (
                 <button onClick={() => setPlay(r.id)} className="block w-full h-full text-left" aria-label={`Play ${r.title}`}>
-                  <Img src={r.thumb} alt="" label="" className="absolute inset-0 w-full h-full" />
+                  <Img src={r.thumb} generic={{ topic: "travel vlog", seed: r.id }} alt="" label="" className="absolute inset-0 w-full h-full" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" aria-hidden />
                   <PlayCircle className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white/90" aria-hidden />
                   <span className="absolute bottom-0 inset-x-0 p-3 text-white text-[12px] line-clamp-3">{r.title}<span className="block text-white/70 text-[11px] mt-0.5">{r.channel}</span></span>
@@ -120,7 +120,7 @@ export function Inspiration({ dest, data, loading, interests, mustSee, onToggleM
             return (
               <article key={s.id} className={cx(card, "w-56 h-[290px] flex flex-col", on && "border-ink")}>
                 <div className="relative">
-                  <Img src={s.photo} place={{ name: s.name, near: city }} alt={s.name} label="" className="w-full h-40" />
+                  <Img src={s.photo} place={{ name: s.name, near: city }} generic={{ topic: kind === "sights" ? `${city} landmark` : "travel activity tour", seed: s.id }} alt={s.name} label="" className="w-full h-40" />
                   <button onClick={() => onToggleMustSee(s.name)} aria-pressed={on} aria-label={on ? `Remove ${s.name} from your must-sees` : `Add ${s.name} to your must-sees`} title={on ? "In your plan" : "Add to your must-sees"}
                     className={cx("absolute top-2.5 right-2.5 w-10 h-10 rounded-full inline-flex items-center justify-center shadow-lift transition-colors", on ? "bg-ink text-white" : "bg-white text-ink hover:bg-cream")}>
                     {on ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}

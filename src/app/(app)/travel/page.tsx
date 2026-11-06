@@ -342,7 +342,7 @@ function TravelInner() {
                 {d.trips.map((t) => (
                   <article key={t.id} className="rounded-2xl bg-paper border border-line overflow-hidden flex">
                     <button onClick={() => { setTripId(t.id); setStage("result"); setSidebar(false); }} className="flex-1 flex text-left min-w-0">
-                      <Img src={t.photo} alt="" label="" className="w-20 h-full min-h-[84px] shrink-0" />
+                      <Img src={t.photo} place={{ name: String(t.destination || "").split(",")[0], near: String(t.destination || "").split(",").slice(1).join(",").trim() }} generic={{ topic: "travel destination city", seed: t.destination }} alt="" label="" className="w-20 h-full min-h-[84px] shrink-0" />
                       <span className="p-3 min-w-0"><span className="block text-[14px] font-medium truncate">{t.destination}</span><span className="block text-[12px] text-muted">{fmtDate(t.start)} to {fmtDate(t.end)}</span><span className="block text-[11.5px] text-gold-deep mt-1">Open itinerary</span></span>
                     </button>
                     <div className="flex flex-col border-l border-line">

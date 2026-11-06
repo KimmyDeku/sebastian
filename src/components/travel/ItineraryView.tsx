@@ -52,7 +52,7 @@ export function ItineraryView({ trip, who, onEdit, onDelete, replanning }: { tri
   return (
     <div className="space-y-5">
       <header className="relative overflow-hidden rounded-3xl min-h-[280px] md:min-h-[340px] border border-line">
-        <Img src={trip.photo} alt={trip.destination} label="" className="absolute inset-0 w-full h-full" />
+        <Img src={trip.photo} place={{ name: String(trip.destination || "").split(",")[0], near: String(trip.destination || "").split(",").slice(1).join(",").trim() }} generic={{ topic: "travel destination city", seed: trip.destination }} alt={trip.destination} label="" className="absolute inset-0 w-full h-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" aria-hidden />
         <div className="relative h-full min-h-[280px] md:min-h-[340px] flex flex-col justify-end p-6 md:p-9 text-white">
           <p className="t-kicker text-white/80">Your itinerary</p>
