@@ -25,6 +25,8 @@ import { Onboarding } from "../Onboarding";
 import { TrialGate } from "../TrialGate";
 import { WhatsNew } from "../WhatsNew";
 import { ClashDialog } from "../schedule/ClashDialog";
+import { BriefingPrompt } from "../briefing/BriefingPrompt";
+import { briefingJob } from "@/lib/briefing";
 import { TaskDock } from "../agent/TaskDock";
 import { AgentEngine } from "../agent/AgentEngine";
 import { routineJobs } from "@/lib/routines";
@@ -60,11 +62,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const schedule = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.schedule : undefined));
   const prefs = useStore((s) => (s.sessionId ? s.data[s.sessionId]?.prefs : undefined));
   const routines = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.routines : undefined));
+  const briefingCfg = useStore((s) => (s.sessionId ? (s.data[s.sessionId] as any)?.briefingSettings : undefined));
   useEffect(() => {
     if (!schedule) return;
-    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, [...routineJobs(routines || []), recJob()]), 2500);
+    const t = setTimeout(() => syncPush(schedule, prefs?.notifications !== false, [...routineJobs(routines || []), recJob(), ...briefingJob()]), 2500);
     return () => clearTimeout(t);
-  }, [schedule, routines, prefs?.notifications]);
+  }, [schedule, routines, briefingCfg, prefs?.notifications]);
 
   // Pushify now uses the site root; move Sebastian's own notifications to /sebastian/ (once).
   useEffect(() => {
@@ -136,6 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <TrialGate />
       <WhatsNew />
       <ClashDialog />
+      <BriefingPrompt />
       <AgentEngine />
       <TaskDock />
       <VoiceLauncher />

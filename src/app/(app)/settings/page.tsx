@@ -8,7 +8,9 @@ import {
 } from "lucide-react";
 import { Checkout, downloadReceipt, pendingPayment, clearPendingPayment } from "@/components/billing/Checkout";
 import { METHOD_NAMES, PLAN_NAMES, type Receipt } from "@/lib/billing";
-import { AtSign } from "lucide-react";
+import { AtSign, Sunrise } from "lucide-react";
+import { BriefingControls } from "@/components/briefing/BriefingControls";
+import { useBriefingSettings } from "@/lib/briefing";
 import { useEmail, patchEmail, forgetGmail, googleClientId as gmailClientId } from "@/lib/gmail";
 import { grantGmail } from "@/components/email/Permission";
 import { clearActivity, useActivity } from "@/lib/activity";
@@ -98,6 +100,7 @@ export default function Settings() {
   const em = useEmail();
   const activity = useActivity();
   const tasks = useTasks();
+  const brief = useBriefingSettings();
   const mem = useMemory();
   const [newFact, setNewFact] = useState("");
   const [learningNow, setLearningNow] = useState(false);
@@ -142,6 +145,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
+    if (window.location.hash === "#briefing") { setOpen({ briefing: true }); setTimeout(() => document.getElementById("briefing-btn")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }
     if (window.location.hash === "#activity") { setOpen({ activity: true }); setTimeout(() => document.getElementById("activity-btn")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150); }
     // Back from a card or PayPal payment page: confirm the payment.
     const q = new URLSearchParams(window.location.search);
@@ -325,6 +329,11 @@ export default function Settings() {
               <p className="text-[12px] text-muted mt-2">Turning these off stops Sebastian using Gmail straight away. To remove Sebastian&apos;s access completely, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline">myaccount.google.com/permissions</a>.</p>
             </>)}
           </div>
+        </Section>
+
+        <Section id="briefing" icon={Sunrise} title="Daily briefing" summary={brief.enabled ? `${brief.days === "weekdays" ? "Weekdays" : "Every day"} at ${brief.time}` : "Off"} open={!!open.briefing} onToggle={() => toggle("briefing")}>
+          <BriefingControls />
+          <Link href="/briefing" className="mt-4 inline-flex items-center gap-1.5 text-[13px] underline">Open today&apos;s briefing</Link>
         </Section>
 
         <Section id="activity" icon={ActivityIcon} title="Activity" summary={d.prefs.activityHistory === false ? "Tracking is off" : `${activity.length} action${activity.length === 1 ? "" : "s"} recorded · time spent in the app`} open={!!open.activity} onToggle={() => toggle("activity")}>

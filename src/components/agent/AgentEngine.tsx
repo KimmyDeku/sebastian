@@ -6,6 +6,7 @@ import { allRoutines, occurrences, type Routine } from "@/lib/routines";
 import { allSubs, money } from "@/lib/subscriptions";
 import { refreshRecs } from "@/lib/recommend";
 import { refreshGoogle, findClashes, type Clash } from "@/lib/clash";
+import { briefingSettings, buildBriefing, localDate } from "@/lib/briefing";
 import { alertPhrase } from "@/lib/alertPhrase";
 import { playChime } from "@/lib/sound";
 import { pushNotify } from "@/lib/notify";
@@ -82,6 +83,24 @@ function checkSubscriptions() {
   }
 }
 
+/** The daily briefing: at the chosen time (or within three hours of it), Sebastian prepares it and says so. */
+let briefingBusy = false;
+async function dailyBriefing() {
+  const s = briefingSettings(); if (!s.enabled || briefingBusy) return;
+  const now = new Date(); const today = localDate(now);
+  if (s.days === "weekdays" && (now.getDay() === 0 || now.getDay() === 6)) return;
+  const [h, m] = s.time.split(":").map(Number); const due = new Date(now); due.setHours(h || 0, m || 0, 0, 0);
+  if (now < due || now.getTime() - due.getTime() > 3 * 3600e3 || (getAgentMeta() as any).lastBriefing2 === today) return;
+  patchAgentMeta((x) => ({ ...x, lastBriefing2: today } as any));
+  briefingBusy = true;
+  try {
+    const b = await buildBriefing();
+    if (!b) return;
+    if (document.visibilityState === "visible") { alert("Your daily briefing is ready."); window.dispatchEvent(new Event("sebastian-briefing-ready")); }
+    else pushNotify("Sebastian", "Your daily briefing is ready.", { tag: "sebastian-briefing", url: "/briefing?play=1" });
+  } finally { briefingBusy = false; }
+}
+
 /** Each evening from 18:00: fresh suggestions, and a gentle note that they're ready. */
 async function suggestions() {
   const now = new Date(); const today = now.toISOString().slice(0, 10);
@@ -125,6 +144,7 @@ export function AgentEngine() {
       localStorage.setItem(KEY, String(now));
       if (now - last > 6 * 3600e3) return; // don't replay a backlog after a long absence
       for (const r of allRoutines()) for (const o of occurrences(r, new Date(last), new Date(now))) fireRoutine(r, o.when);
+      dailyBriefing().catch(() => {});
     };
     const watch = () => { try { checkClashes(); checkSubscriptions(); briefing(); suggestions(); } catch {} };
     const a = setInterval(tick, 30000), b = setInterval(watch, 10 * 60000);
