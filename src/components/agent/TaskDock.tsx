@@ -5,6 +5,8 @@ import { ListChecks, X, Send, Loader2 } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { VoiceButton } from "../VoiceButton";
 import { useTasks, startTask } from "@/lib/agent";
+import { wantsDownload, downloadFor } from "@/lib/download";
+import { toast } from "../ui/Toast";
 import { cx } from "@/lib/util";
 
 /** The task window: what Sebastian is doing, what needs approval, and a box to give him a task. */
@@ -22,6 +24,11 @@ export function TaskDock() {
   const go = async () => {
     const q = text.trim(); if (!q || busy) return;
     setBusy(true); setText("");
+    if (wantsDownload(q)) {
+      const r = await downloadFor(q).catch(() => ({ ok: false, message: "I'm sorry, I couldn't make that download." }));
+      (r.ok ? toast.success : toast.error)(r.message);
+      fromVoice.current = false; setBusy(false); return;
+    }
     await startTask(q, fromVoice.current ? "voice" : "you");
     fromVoice.current = false; setBusy(false);
   };

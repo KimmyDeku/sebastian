@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { CalendarClock, Loader2, ArrowRight } from "lucide-react";
+import { CalendarClock, Loader2, ArrowRight, ExternalLink, Mail, RefreshCw, Lock } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { VoiceButton } from "../VoiceButton";
@@ -9,12 +9,15 @@ import { useAccount, useData } from "@/lib/store";
 import { formOfAddress } from "@/lib/address";
 import { allItems, moveItem, when, timeOf, type Clash } from "@/lib/clash";
 import type { CalItem } from "@/lib/gcal";
+import { gmailToken } from "@/lib/gmail";
+import { refreshGoogle } from "@/lib/clash";
+import { flushPendingToGoogle } from "@/lib/gsync";
 import { startTask } from "@/lib/agent";
 import { logActivity } from "@/lib/activity";
 import { toast } from "../ui/Toast";
 import { cx } from "@/lib/util";
 
-type Mode = "which" | "when" | "done";
+type Mode = "which" | "when" | "done" | "locked";
 const localInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 const Badge = ({ i }: { i: CalItem }) => <span className={cx("text-[10.5px] rounded-full px-2 py-0.5 border", i.source === "google" ? "border-ink/30" : "border-line text-muted")}>{i.source === "google" ? "Google Calendar" : "Sebastian"}</span>;
@@ -29,6 +32,8 @@ export function ClashDialog() {
   const [line, setLine] = useState("");
   const [pick, setPick] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reconnect, setReconnect] = useState<Date | null>(null);
+  const [syncLater, setSyncLater] = useState(false);
   const queue = useRef<Clash[]>([]);
   const who = formOfAddress(acc, d.prefs) || acc?.firstName || "";
   const say = (t: string) => { setLine(t); if (d.prefs.voiceAlerts !== false) { try { speak(t, d.prefs.voiceName); } catch {} } };
@@ -39,7 +44,15 @@ export function ClashDialog() {
     const day = new Date(c.a.start).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
     say(`Pardon me${who ? `, ${who}` : ""}. Two of your plans overlap on ${day}: ${c.a.title} at ${timeOf(c.a.start)} and ${c.b.title} at ${timeOf(c.b.start)}. Which would you like me to move?`);
   };
+  const locked = (x: CalItem) => x.source === "google" && x.canEdit === false;
   const askWhen = (item: CalItem) => {
+    setReconnect(null);
+    if (locked(item)) {
+      setMoving(item); setMode("locked");
+      const alt = clash ? (clash.a.id === item.id ? clash.b : clash.a) : null;
+      say(`${item.title} was organised by ${item.organizer || "someone else"}, so Google only lets them change its time. I can draft a polite note asking them to move it${alt && !locked(alt) ? `, or move ${alt.title} instead` : ""}.`);
+      return;
+    }
     setMoving(item); setMode("when");
     const t = new Date(item.start); t.setDate(t.getDate() + 1); setPick(localInput(t));
     say(`Very good. Shall I move ${item.title} to tomorrow at the same time, or to a day and time you prefer?`);
@@ -54,7 +67,7 @@ export function ClashDialog() {
   });
 
   const close = () => {
-    setClash(null); setMoving(null); setLine("");
+    setClash(null); setMoving(null); setLine(""); setSyncLater(false);
     const next = queue.current.shift(); if (next) setTimeout(() => openClash(next), 400);
   };
   const leave = () => { say("Very well. I'll leave them as they are."); setTimeout(close, 1800); };
@@ -64,17 +77,22 @@ export function ClashDialog() {
     setBusy(true);
     try {
       const from = moving.start;
-      await moveItem(moving, start);
+      const saved = await moveItem(moving, start);
       const len = new Date(moving.end).getTime() - new Date(moving.start).getTime();
       const end = start.getTime() + len;
       const hit = allItems().find((x) => x.id !== moving.id && new Date(x.start).getTime() < end && new Date(x.end).getTime() > start.getTime());
-      const text = `I've moved ${moving.title} to ${when(start)}.`;
+      const where = saved === "google" || saved === "moved" ? " and updated it in your Google Calendar" : saved === "added" ? " and saved it to your Google Calendar" : "";
+      const text = `I've moved ${moving.title} to ${when(start)}${where}.`;
+      if (saved === "pending" || saved === "failed") setSyncLater(true);
       logActivity({ kind: "schedule", title: `Rescheduled: ${moving.title}`, href: "/schedule" });
       startTask(`Reschedule ${moving.title}`, "you", { title: `Moved ${moving.title}`, steps: [{ label: `Moved from ${when(from)} to ${when(start)}`, tool: "info", args: { text: `${moving.title} now starts ${when(start)}${moving.source === "google" || moving.gcalId ? ", in Google Calendar too" : ""}. Please let anyone involved know.` }, critical: false }] });
       if (hit) { setMoving({ ...moving, start: start.toISOString(), end: new Date(end).toISOString() }); say(`${text} Just so you know, that also overlaps ${hit.title} at ${timeOf(hit.start)}. Would you like another time?`); }
+      else if (saved === "pending" || saved === "failed") { setMode("done"); say(`Done. ${text} Google Calendar needs you to reconnect, then I'll save it there too.`); }
       else { setMode("done"); say(`Done. ${text} Please let anyone involved know.`); setTimeout(close, 4500); }
     } catch (e: any) {
-      toast.error(e?.message || "That couldn't be moved."); say("My apologies, I couldn't move that just now.");
+      if (e?.code === "not-yours") { setMoving({ ...moving, canEdit: false }); setMode("locked"); say(`${e.message} I can draft a polite note asking them to move it.`); }
+      else if (e?.code === "reconnect") { setReconnect(start); say(e.message); }
+      else say(`My apologies, I couldn't move that. ${e?.message || ""}`.trim());
     } finally { setBusy(false); }
   };
 
@@ -106,7 +124,7 @@ export function ClashDialog() {
   const tomorrow = moving ? (() => { const x = new Date(moving.start); x.setDate(x.getDate() + 1); return x; })() : null;
   const afterOther = other && moving && sameDay(new Date(other.start), new Date(moving.start)) ? new Date(other.end) : null;
   return (
-    <Modal open onClose={close} title={mode === "done" ? "All sorted" : moving && !clash ? `Move ${moving.title}` : "Two plans overlap"}>
+    <Modal open onClose={close} title={mode === "done" ? "All sorted" : mode === "locked" ? `${moving?.title} can't be moved by Sebastian` : moving && !clash ? `Move ${moving.title}` : "Two plans overlap"}>
       <div className="flex items-start gap-3 rounded-2xl bg-cream/60 border border-line p-3 mb-4">
         <CalendarClock className="w-5 h-5 text-gold shrink-0 mt-0.5" aria-hidden />
         <p className="text-[13.5px] leading-relaxed" aria-live="polite">{line}</p>
@@ -116,7 +134,8 @@ export function ClashDialog() {
           <div className="space-y-2">
             {[clash.a, clash.b].map((x) => (
               <button key={x.id} onClick={() => askWhen(x)} className="w-full text-left rounded-2xl border border-line p-3 hover:bg-cream/50 flex items-center gap-3">
-                <span className="flex-1 min-w-0"><span className="block text-[14px] font-medium truncate">Move {x.title}</span><span className="block text-[12px] text-muted">{when(x.start)}</span></span>
+                <span className="flex-1 min-w-0"><span className="block text-[14px] font-medium truncate">Move {x.title}</span><span className="block text-[12px] text-muted">{when(x.start)}{locked(x) ? ` · organised by ${x.organizer || "someone else"}` : ""}</span></span>
+                {locked(x) && <Lock className="w-3.5 h-3.5 text-muted" aria-label="Only the organiser can move this" />}
                 <Badge i={x} /><ArrowRight className="w-4 h-4 text-muted" />
               </button>
             ))}
@@ -127,6 +146,21 @@ export function ClashDialog() {
           </div>
         </>
       )}
+      {moving && mode === "when" && reconnect && (
+        <Button className="w-full justify-center mb-3" onClick={async () => { try { await gmailToken("calendar"); await refreshGoogle(true); const t = reconnect; setReconnect(null); doMove(t); } catch (e: any) { toast.error(e?.message || "Google Calendar couldn't connect."); } }}><RefreshCw className="w-4 h-4" />Reconnect Google Calendar and move it</Button>
+      )}
+      {moving && mode === "locked" && (() => {
+        const alt = clash ? (clash.a.id === moving.id ? clash.b : clash.a) : null;
+        const note = `Write a short, polite email to ${moving.organizer || "the organiser"}${moving.organizerEmail ? ` (${moving.organizerEmail})` : ""} asking whether "${moving.title}" on ${when(moving.start)} could be moved, because I have a clash. Suggest that I'm flexible on timing.`;
+        return (
+          <div className="space-y-2">
+            {alt && !locked(alt) && <Button className="w-full justify-center" onClick={() => { setClash(clash); askWhen(alt); }}>Move {alt.title} instead</Button>}
+            <Button variant="outline" className="w-full justify-center" onClick={() => { close(); window.location.href = `/email?instruction=${encodeURIComponent(note)}`; }}><Mail className="w-4 h-4" />Ask the organiser to move it</Button>
+            {moving.link && <a href={moving.link} target="_blank" rel="noopener noreferrer" className="w-full h-11 rounded-pill border border-line text-[14px] inline-flex items-center justify-center gap-2 hover:bg-cream/50"><ExternalLink className="w-4 h-4" />Open in Google Calendar</a>}
+            <div className="pt-2"><button onClick={close} className="text-[13px] text-muted underline">Leave it as it is</button></div>
+          </div>
+        );
+      })()}
       {moving && mode === "when" && (
         <>
           <div className="space-y-2">
@@ -145,7 +179,12 @@ export function ClashDialog() {
           </div>
         </>
       )}
-      {mode === "done" && <div className="flex justify-end"><Button onClick={close}>Thank you</Button></div>}
+      {mode === "done" && (
+        <div className="flex flex-wrap justify-end gap-2">
+          {syncLater && <Button variant="outline" onClick={async () => { try { await gmailToken("calendar"); const n = await flushPendingToGoogle(); await refreshGoogle(true); setSyncLater(false); say(n ? "Saved to your Google Calendar." : "All up to date."); toast.success("Saved to Google Calendar."); } catch (e: any) { toast.error(e?.message || "Google Calendar couldn't connect."); } }}><RefreshCw className="w-4 h-4" />Reconnect and save to Google Calendar</Button>}
+          <Button onClick={close}>Thank you</Button>
+        </div>
+      )}
     </Modal>
   );
 }

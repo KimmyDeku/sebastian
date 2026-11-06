@@ -86,7 +86,7 @@ export function MonoCalendar() {
               <span className="text-[13px] font-medium tabular-nums w-12 shrink-0">{timeOf(i.start)}</span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-medium">{i.title}</span>
-                <span className="block text-[11.5px] text-black/60">{timeOf(i.start)} to {timeOf(i.end)} · {i.source === "google" ? "Google Calendar" : "Sebastian"}{clashIds.has(i.id) ? " · clashes" : ""}</span>
+                <span className="block text-[11.5px] text-black/60">{timeOf(i.start)} to {timeOf(i.end)} · {i.source === "google" ? "Google Calendar" : "Sebastian"}{i.source === "google" && i.canEdit === false ? ` · organised by ${i.organizer || "someone else"}` : ""}{clashIds.has(i.id) ? " · clashes" : ""}</span>
               </span>
               <button onClick={() => window.dispatchEvent(new CustomEvent("sebastian-move", { detail: i }))} className="h-8 px-3 rounded-full border-2 border-black text-[12px] inline-flex items-center gap-1 hover:bg-black hover:text-white shrink-0">Move<MoveRight className="w-3.5 h-3.5" /></button>
             </li>

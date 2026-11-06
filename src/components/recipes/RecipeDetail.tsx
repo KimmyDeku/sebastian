@@ -13,6 +13,8 @@ import { clamp, normalizeRecipe } from "@/lib/util";
 
 export function RecipeDetail({ r: raw, initialServings, saved, onToggle, onClose }: { r: Recipe | null; initialServings?: number; saved: boolean; onToggle: () => void; onClose: () => void }) {
   const r = raw ? normalizeRecipe(raw) : null;
+  // So "download the recipe" saves this one.
+  if (typeof window !== "undefined" && r) (window as any).__sebastianLastRecipe = r;
   const [serv, setServ] = useState(initialServings || r?.baseServings || 2);
   const [chef, setChef] = useState(false);
   if (!r) return null;

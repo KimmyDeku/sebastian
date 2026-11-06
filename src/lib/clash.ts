@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useStore, actions } from "./store";
 import { listGoogleEvents, moveGoogleEvent, googleCalendarReady, type CalItem } from "./gcal";
+import { saveToGoogle, type GoogleSave } from "./gsync";
 
 const HOUR = 3600e3;
 let google: { items: CalItem[]; at: number } | null = null;
@@ -51,17 +52,21 @@ export function findClashes(days = 14): Clash[] {
 }
 
 /** Moves an event (in Sebastian, in Google Calendar, or both when they're linked). */
-export async function moveItem(item: CalItem, start: Date) {
+/** Moves an event. Sebastian's own events are also saved to Google Calendar (added or moved there). */
+export async function moveItem(item: CalItem, start: Date): Promise<GoogleSave | "google"> {
   const length = new Date(item.end).getTime() - new Date(item.start).getTime();
   const s = useStore.getState(); const acc: any = s.accounts.find((a) => a.id === s.sessionId);
   const tz = acc?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (item.source === "sebastian") {
     actions.updateEvent(item.id, { start: start.toISOString(), end: new Date(start.getTime() + length).toISOString(), notified: false } as any);
-    if (item.gcalId && googleCalendarReady()) await moveGoogleEvent(item.gcalId, start, length, tz).catch(() => {});
+    const r = await saveToGoogle(item.id);
+    if (r.result === "added" || r.result === "moved") await refreshGoogle(true).catch(() => null);
+    return r.result;
   } else {
     if (!item.gcalId) throw new Error("That event can't be moved.");
     await moveGoogleEvent(item.gcalId, start, length, tz);
     await refreshGoogle(true);
+    return "google";
   }
 }
 

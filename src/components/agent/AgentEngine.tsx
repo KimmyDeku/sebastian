@@ -6,6 +6,7 @@ import { allRoutines, occurrences, type Routine } from "@/lib/routines";
 import { allSubs, money } from "@/lib/subscriptions";
 import { refreshRecs } from "@/lib/recommend";
 import { refreshGoogle, findClashes, type Clash } from "@/lib/clash";
+import { flushPendingToGoogle } from "@/lib/gsync";
 import { briefingSettings, buildBriefing, localDate } from "@/lib/briefing";
 import { emailNow } from "@/lib/emailNotify";
 import { alertPhrase } from "@/lib/alertPhrase";
@@ -55,6 +56,8 @@ const waiting: Clash[] = [];
 async function checkClashes() {
   const { d } = state(); if (!d) return;
   await refreshGoogle().catch(() => null);
+  // Anything that couldn't be saved to Google Calendar earlier is saved now, if Google is connected.
+  await flushPendingToGoogle().catch(() => 0);
   for (const c of findClashes(14)) {
     if (seen(c.key)) continue;
     mark(c.key);

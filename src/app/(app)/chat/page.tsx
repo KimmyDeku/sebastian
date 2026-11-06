@@ -8,6 +8,7 @@ import { SebastianMark, type MarkState } from "@/components/SebastianMark";
 import { Markdown } from "@/components/Markdown";
 import { actions, useAccount, useData } from "@/lib/store";
 import { formOfAddress, greeting } from "@/lib/address";
+import { wantsDownload, downloadFor, isDownloadNote } from "@/lib/download";
 import { uid } from "@/lib/util";
 import { api } from "@/lib/api";
 import { localIntent, routeHref } from "@/lib/intent";
@@ -80,6 +81,15 @@ function ChatInner() {
   const send = (text: string, att: Attachment | null) => {
     const m: Msg = { id: uid("m_"), role: "user", content: text, at: new Date().toISOString() };
     let cid = chatId;
+    // "Download …": Sebastian saves the file to this device and says so, instead of asking the AI.
+    if (wantsDownload(text) && !att) {
+      const last = [...msgs].reverse().find((x) => x.role === "assistant" && !x.error && !isDownloadNote(x.content))?.content;
+      if (!cid || !chat) { cid = actions.newChat(m); setChatId(cid); router.replace(`/chat?id=${cid}`); } else actions.pushMsg(cid, m);
+      const id = cid;
+      downloadFor(text, { lastReply: last }).catch(() => ({ ok: false, message: "I'm sorry, I couldn't make that download." }))
+        .then((r) => actions.pushMsg(id, { id: uid("m_"), role: "assistant", content: r.message, at: new Date().toISOString() } as Msg));
+      return;
+    }
     if (!cid || !chat) { cid = actions.newChat(m); setChatId(cid); router.replace(`/chat?id=${cid}`); ask(cid, [m], att); }
     else { actions.pushMsg(cid, m); ask(cid, [...msgs, m], att); }
   };

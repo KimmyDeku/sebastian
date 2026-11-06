@@ -11,6 +11,7 @@ import { actions, useAccount, useData } from "@/lib/store";
 import { formOfAddress, greeting } from "@/lib/address";
 import { TASKS, formatSlot } from "@/lib/agentTasks";
 import { runTask, type Card } from "./runTask";
+import { wantsDownload, downloadFor, isDownloadNote } from "@/lib/download";
 import { EMERGENCY } from "../discover/emergency";
 import { uid, cx } from "@/lib/util";
 
@@ -138,6 +139,13 @@ function Session({ seed, onClose }: { seed: string; onClose: () => void }) {
     cancel();
     try {
       log("user", t);
+      if (wantsDownload(t)) {
+        const last = [...history.current].reverse().find((m: any) => m.role === "assistant" && !isDownloadNote(m.content))?.content;
+        const r = await downloadFor(t, { lastReply: last }).catch(() => ({ ok: false, message: "I'm sorry, I couldn't make that download." }));
+        history.current.push({ role: "user", content: t }, { role: "assistant", content: r.message });
+        void say(r.message);
+        return;
+      }
       const p = live.current.pending;
       if (p && YES.test(t)) {
         setPending(null);
